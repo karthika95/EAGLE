@@ -740,10 +740,6 @@ class Model(nn.Module):
             is_new_word = [tok.startswith('Ġ') for tok in decoded_tokens]
             valid_indices = [i for i, flag in enumerate(is_new_word) if not flag]
 
-            pruned_tokens = [decoded_tokens[i] for i in range(len(decoded_tokens)) if is_new_word[i]]
-            if pruned_tokens:
-                print(f"Pruned tokens at depth {i}: {pruned_tokens}")
-
             if not valid_indices:
                 continue
             # if any(tok.startswith('Ġ') for tok in decoded_tokens):
