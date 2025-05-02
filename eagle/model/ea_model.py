@@ -420,8 +420,9 @@ class EaModel(nn.Module):
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
         draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, hidden_state, sample_token = initialize_tree(
-            input_ids, self, past_key_values, logits_processor
-        )
+            input_ids, self, past_key_values, logits_processor, tokenizer=self.tokenizer #updated_njk
+        )#from utils.py
+        
         new_token = 0
         max_length = max_length - self.ea_layer.total_tokens - 10
         for idx in range(max_length):
@@ -459,7 +460,8 @@ class EaModel(nn.Module):
                 current_length_data,
                 self,
                 hidden_state_new,
-                sample_p
+                sample_p,
+                tokenizer=self.tokenizer #updated_njk
             )
 
             yield input_ids

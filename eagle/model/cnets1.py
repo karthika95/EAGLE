@@ -657,7 +657,7 @@ class Model(nn.Module):
         self.stable_kv = None
 
     @torch.no_grad()
-    def topK_genrate(self, hidden_states, input_ids, head, logits_processor):
+    def topK_genrate(self, hidden_states, input_ids, head, logits_processor,tokenizer):#updated_njk
 
         input_ids = input_ids.to(hidden_states.device)
         total_tokens = self.total_tokens
@@ -734,6 +734,12 @@ class Model(nn.Module):
             input_ids = topk_index.view(-1)[topk_cs_index][None]
 
             ss_token.append(topk_index)
+
+            #updated_njk
+            decoded_tokens = tokenizer.convert_ids_to_tokens(topk_index.view(-1).tolist())
+            if any(tok.startswith('Ġ') for tok in decoded_tokens):
+                break
+
             scores_list.append(cu_scores)
             tree_mask = torch.cat((tree_mask[:, :, out_ids], self.tree_mask_init), dim=3)
 

@@ -167,6 +167,8 @@ def bot(history, temperature, top_p, use_EaInfer, highlight_EaInfer,session_stat
             naive_text.append(model.tokenizer.decode(output_ids[0, cu_len], skip_special_tokens=True,
                                                      spaces_between_special_tokens=False,
                                                      clean_up_tokenization_spaces=True, ))
+                                                     
+            print("Draft token:", naive_text[-1])#updated_njk
 
             cu_len = output_ids.shape[1]
             colored_text = highlight_text(text, naive_text, "orange")
