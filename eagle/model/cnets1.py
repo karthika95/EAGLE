@@ -737,9 +737,20 @@ class Model(nn.Module):
 
             #updated_njk
             decoded_tokens = tokenizer.convert_ids_to_tokens(topk_index.view(-1).tolist())
-            if any(tok.startswith('Ġ') for tok in decoded_tokens):
-                break
+            is_new_word = [tok.startswith('Ġ') for tok in decoded_tokens]
+            valid_indices = [i for i, flag in enumerate(is_new_word) if not flag]
 
+            pruned_tokens = [decoded_tokens[i] for i in range(len(decoded_tokens)) if is_new_word[i]]
+            if pruned_tokens:
+                print(f"Pruned tokens at depth {i}: {pruned_tokens}")
+
+            if not valid_indices:
+                continue
+            # if any(tok.startswith('Ġ') for tok in decoded_tokens):
+            #     break
+            topk_index = topk_index.view(-1)[valid_indices][None]
+            topk_p = topk_p.view(-1)[valid_indices][None]
+            
             scores_list.append(cu_scores)
             tree_mask = torch.cat((tree_mask[:, :, out_ids], self.tree_mask_init), dim=3)
 
