@@ -409,8 +409,8 @@ def evaluate_posterior(
         if adjustflag and accept_length != candidates.shape[1]:
             sample_p = gtp
         else:
-            gt_logits = logits[best_candidate, accept_length - 1]
-            gt_logits = logits_processor(None, gt_logits)
+            gt_logits = logits[best_candidate, accept_length - 1][None]
+            gt_logits = logits_processor(None, gt_logits)[0]
             sample_p = torch.softmax(gt_logits, dim=0)
         return torch.tensor(best_candidate), accept_length - 1, sample_p
 

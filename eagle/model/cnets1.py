@@ -29,6 +29,13 @@ from torch import nn
 
 from transformers.activations import ACT2FN
 
+from transformers import AutoTokenizer
+import networkx as nx
+import matplotlib.pyplot as plt
+from pathlib import Path
+from networkx.readwrite import json_graph
+import uuid
+import json
 
 try:
     from .configs import EConfig
@@ -40,8 +47,15 @@ except:
     from choices import *
     from utils import prepare_logits_processor
 
-
-
+# # Pranav: Comment for Latin fonts
+# plt.rcParams['font.family'] = 'sans-serif'
+# plt.rcParams['font.sans-serif'] = [
+#     'Noto Sans Devanagari',
+#     'DejaVu Sans',
+#     'Arial',
+#     'Liberation Sans'
+# ]
+# plt.rcParams['axes.unicode_minus'] = False
 
 # Copied from transformers.models.bart.modeling_bart._make_causal_mask
 def _make_causal_mask(
@@ -475,6 +489,24 @@ class Model(nn.Module):
         self.gradient_checkpointing = True
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
+        
+        self.path=path
+        self.gen_count=0
+        self.previous_count=[0]#keep track of the number of trees generated
+        self.currpath = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        self.graphdir = os.path.join(self.currpath, "Graphs")#Directory to store the graphs and json
+        if not os.path.exists(self.graphdir):
+            os.mkdir(self.graphdir)
+
+        Path(self.graphdir,"Image").mkdir(exist_ok=True)
+        Path(self.graphdir,"Json").mkdir(exist_ok=True)
+
+        self.image_path=os.path.join(self.graphdir,"Image")
+        self.json_path=os.path.join(self.graphdir,"Json")
+
+        if self.gen_count == 0:#The directory structure is cleared in a freh run
+            self.clear_folder(self.image_path)
+            self.clear_folder(self.json_path)
 
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
         if load_emb:
@@ -663,6 +695,10 @@ class Model(nn.Module):
         total_tokens = self.total_tokens
         depth = self.depth
         top_k = self.top_k
+        
+        self.depth_count=0
+        self.node_list=[]
+        self.root_token_id=input_ids[:,-1]
 
         sample_token = input_ids[:, -1]
 
@@ -736,19 +772,23 @@ class Model(nn.Module):
             ss_token.append(topk_index)
 
             #updated_njk
-            decoded_tokens = tokenizer.convert_ids_to_tokens(topk_index.view(-1).tolist())
-            is_new_word = [tok.startswith('Ġ') for tok in decoded_tokens]
-            valid_indices = [i for i, flag in enumerate(is_new_word) if not flag]
+            # decoded_tokens = tokenizer.convert_ids_to_tokens(topk_index.view(-1).tolist())
+            # is_new_word = [tok.startswith('Ġ') for tok in decoded_tokens]
+            # valid_indices = [i for i, flag in enumerate(is_new_word) if not flag]
 
-            if not valid_indices:
-                continue
-            # if any(tok.startswith('Ġ') for tok in decoded_tokens):
-            #     break
-            topk_index = topk_index.view(-1)[valid_indices][None]
-            topk_p = topk_p.view(-1)[valid_indices][None]
+            # if not valid_indices:
+            #     continue
+            # # if any(tok.startswith('Ġ') for tok in decoded_tokens):
+            # #     break
+            # topk_index = topk_index.view(-1)[valid_indices][None]
+            # topk_p = topk_p.view(-1)[valid_indices][None]
             
             scores_list.append(cu_scores)
             tree_mask = torch.cat((tree_mask[:, :, out_ids], self.tree_mask_init), dim=3)
+            
+            #Zoho Labs Kottarakara: visualize the draft tree in each depth
+            self.visualize_draft_tree(torch.cat(ss_token, dim=0).view(-1), parents_list)
+            self.depth_count+=1
 
 
 
@@ -818,12 +858,93 @@ class Model(nn.Module):
         retrieve_indices = torch.tensor(retrieve_indices, dtype=torch.long)
         del mask_index, mask_index_list, noleaf_index, noleaf_num, leaf_num, max_depth, rid
         tree_position_ids = tree_position_ids.to(hidden_states.device)
+        
+        self.gen_count+=1
 
         return draft_tokens, retrieve_indices, tree_mask, tree_position_ids
+    
+    #Zoho Labs Kottarakara: added visualize_draft_tree
+    #Getting the parent-child relations and the node id to token mapping
+    def visualize_draft_tree(self, ss_token_list, parents_list):
+        if getattr(self, 'tokenizer', None) is None:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.path)
+
+        tree = []#all the parent-child relations are stored in tuples
+        tree_tokens = {}#all the node ids and their curresponding tokens are mapped together as key value pairs
+        tree_tokens[0]=self.tokenizer.decode(self.root_token_id)
+
+        root_idx = int(parents_list[0][0])#FIrst the root token and its relations are added
+ 
+        for idx in parents_list[1]:
+            tree.append( (root_idx, int(idx) ) )
+            tree_tokens[int(idx)]=self.tokenizer.decode(int(ss_token_list[idx]))
 
 
+        idx_base = self.top_k + 1
+        for i in range(2, len(parents_list)):
+            epoch_list = parents_list[i]#Each element in the parent list is taken
+            epoch_list_parent_idx = (epoch_list - idx_base) // 10 #The actual ids of the parents 
+            for parent_idx, epoch_tok_idx in zip(epoch_list_parent_idx, epoch_list):#tuple the parent child relations
+                parent_tok_idx = int(parents_list[i-1][parent_idx])
+                epoch_tok_idx = int(epoch_tok_idx)
+                tree.append ( (parent_tok_idx, epoch_tok_idx) ) 
+                tree_tokens[parent_tok_idx] = self.tokenizer.decode(int(ss_token_list[parent_tok_idx])) 
+                tree_tokens[epoch_tok_idx] = self.tokenizer.decode(int(ss_token_list[epoch_tok_idx])) 
+
+            idx_base += self.top_k ** 2
+        self.graph(tree,tree_tokens)
+
+    #Zoho Labs Kottarakkara: create a graph for each level of depth and save it
+    def graph(self,tree,tree_tokens):
+        G=nx.DiGraph()
+        for i in tree_tokens.keys():
+            tok=tree_tokens[i]
+            G.add_node(i,label=tok)
+        G.add_edges_from(tree)
+        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
+        node_labels=nx.get_node_attributes(G,'label')
+        plt.figure(figsize=(20,15))
+        nx.draw(G, pos,labels=node_labels,node_size=800, node_color="skyblue", font_size=10, font_weight="bold", arrows=True)
+        plt.show()
+
+        image_base_path,current_folder_name,json_base_path=self.image_json_save_path()
+        image_name=f"{current_folder_name}_depth_{self.depth_count}.png"
+        image_absolute_path=os.path.join(image_base_path,image_name)
+        json_name=f"{current_folder_name}_depth_{self.depth_count}.json"
+        json_absolute_path=os.path.join(json_base_path,json_name)
+
+        data=json_graph.node_link_data(G)
+        with open(json_absolute_path,"w") as f:
+            json.dump(data,f,indent=4)
 
 
+        plt.savefig(image_absolute_path)
+        plt.close()
+
+    def clear_folder(self, folder_path):
+        if os.path.exists(folder_path):
+            for item in os.listdir(folder_path):
+                item_path = os.path.join(folder_path, item)
+                if os.path.isfile(item_path):
+                    os.remove(item_path)
+                elif os.path.isdir(item_path):
+                    import shutil
+                    shutil.rmtree(item_path)
+
+    #Zoho Labs Kottarakkara: Generate paths where the graph has to be saved 
+    def image_json_save_path(self):
+        image_path=os.path.join(self.graphdir,"Image")
+        json_path=os.path.join(self.graphdir,"Json")
+
+        current_folder_name=f"tree_gen_{self.gen_count}"
+        images_base_path=os.path.join(image_path,current_folder_name)
+        json_base_path=os.path.join(json_path,current_folder_name)
+        if not os.path.exists(images_base_path):
+            os.mkdir(images_base_path)
+        if not os.path.exists(json_base_path):
+            os.mkdir(json_base_path)
+
+        return images_base_path,current_folder_name,json_base_path
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
