@@ -866,6 +866,9 @@ class Model(nn.Module):
     #Zoho Labs Kottarakara: added visualize_draft_tree
     #Getting the parent-child relations and the node id to token mapping
     def visualize_draft_tree(self, ss_token_list, parents_list):
+        
+        ss_token_list=torch.cat([self.root_token_id,ss_token_list],dim=0)
+        
         if getattr(self, 'tokenizer', None) is None:
             self.tokenizer = AutoTokenizer.from_pretrained(self.path)
 
@@ -903,7 +906,7 @@ class Model(nn.Module):
         G.add_edges_from(tree)
         pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
         node_labels=nx.get_node_attributes(G,'label')
-        plt.figure(figsize=(20,15))
+        plt.figure(figsize=(25, 20))
         nx.draw(G, pos,labels=node_labels,node_size=800, node_color="skyblue", font_size=10, font_weight="bold", arrows=True)
         plt.show()
 
