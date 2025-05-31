@@ -18,8 +18,8 @@ model = EaModel.from_pretrained(
     total_token=-1
 )
 model.eval()
-your_message="भारत की राजधानी के बारें में बताओ"
-conv = get_conversation_template("tulu") # llama-2-chat, llama-3-instruct, tulu
+your_message="How do you think the dinosours became extinct"
+conv = get_conversation_template("llama-2-chat") # llama-2-chat, llama-3-instruct, tulu
 conv.append_message(conv.roles[0], your_message)
 conv.append_message(conv.roles[1], None)
 prompt = conv.get_prompt()

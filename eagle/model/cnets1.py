@@ -20,22 +20,23 @@
 """ PyTorch LLaMA model."""
 import copy
 import os
+import uuid
+import json
+import shutil
+import unicodedata
 # os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 import math
 from typing import List, Optional, Tuple, Union
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from torch import nn
-
-from transformers.activations import ACT2FN
-
 from transformers import AutoTokenizer
 import networkx as nx
 import matplotlib.pyplot as plt
 from pathlib import Path
 from networkx.readwrite import json_graph
-import uuid
-import json
+from transformers.activations import ACT2FN
+import subprocess
 
 try:
     from .configs import EConfig
@@ -545,6 +546,8 @@ class Model(nn.Module):
         self.logsoftmax = nn.LogSoftmax(dim=-1)
         for param in self.embed_tokens.parameters():
             param.requires_grad = False
+        
+        self.graph_process = subprocess.Popen(["python", "-u", "eagle/application/graph_launcher.py"], stdin=subprocess.PIPE,text=True)
 
     def init_tree(self):
         self.tree_mask_init = torch.eye(self.top_k, device=self.embed_tokens.weight.device)[None, None]
@@ -790,8 +793,6 @@ class Model(nn.Module):
             self.visualize_draft_tree(torch.cat(ss_token, dim=0).view(-1), parents_list)
             self.depth_count+=1
 
-
-
         scores_list = torch.cat(scores_list, dim=0).view(-1)
         ss_token_list = torch.cat(ss_token, dim=0).view(-1)
         top_scores = torch.topk(scores_list, total_tokens, dim=-1)
@@ -802,6 +803,22 @@ class Model(nn.Module):
         draft_tokens = torch.cat((sample_token, draft_tokens), dim=0)
 
         draft_parents = torch.cat(parents_list, dim=0)[top_scores_index // top_k].long()
+        
+        #Final draft tree
+        
+        final_top_scores_index=torch.tensor([i.item()+1 for i in top_scores_index])
+        zipped_nodes=[(a.item(),b.item()) for a, b in zip(draft_parents,final_top_scores_index)]
+        token_mapping={}
+        root_added=torch.cat((torch.tensor([0]),final_top_scores_index),dim=0)
+        tokenizer=AutoTokenizer.from_pretrained(self.path)
+
+        ss_token_list_updated=torch.cat((sample_token,ss_token_list),dim=0)
+        for i in root_added:
+            token_mapping[i.item()]=tokenizer.decode(int(ss_token_list_updated[i.item()].item()))
+
+        self.graph(zipped_nodes,token_mapping)
+        #---------------------------
+        
         mask_index = torch.searchsorted(top_scores_index, draft_parents - 1, right=False)
         # mask_index[(top_scores_index[mask_index]!=draft_parents - 1)]=-1
         mask_index[draft_parents == 0] = -1
@@ -876,7 +893,7 @@ class Model(nn.Module):
         tree_tokens = {}#all the node ids and their curresponding tokens are mapped together as key value pairs
         tree_tokens[0]=self.tokenizer.decode(self.root_token_id)
 
-        root_idx = int(parents_list[0][0])#FIrst the root token and its relations are added
+        root_idx = int(parents_list[0][0])#First the root token and its relations are added
  
         for idx in parents_list[1]:
             tree.append( (root_idx, int(idx) ) )
@@ -886,7 +903,7 @@ class Model(nn.Module):
         idx_base = self.top_k + 1
         for i in range(2, len(parents_list)):
             epoch_list = parents_list[i]#Each element in the parent list is taken
-            epoch_list_parent_idx = (epoch_list - idx_base) // 10 #The actual ids of the parents 
+            epoch_list_parent_idx = (epoch_list - idx_base) // self.top_k #The actual ids of the parents 
             for parent_idx, epoch_tok_idx in zip(epoch_list_parent_idx, epoch_list):#tuple the parent child relations
                 parent_tok_idx = int(parents_list[i-1][parent_idx])
                 epoch_tok_idx = int(epoch_tok_idx)
@@ -899,16 +916,19 @@ class Model(nn.Module):
 
     #Zoho Labs Kottarakkara: create a graph for each level of depth and save it
     def graph(self,tree,tree_tokens):
+        for k, v in tree_tokens.items():
+            tree_tokens[k] = v.replace("\n", "\\n").replace("\\", "\\\\")
         G=nx.DiGraph()
         for i in tree_tokens.keys():
             tok=tree_tokens[i]
-            G.add_node(i,label=tok)
+            color="white" if i==0 else "orange"
+            G.add_node(i,label=tok,style="filled", fillcolor=color, fontweight="bold", fontsize="20", fontcolor="black")
         G.add_edges_from(tree)
-        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
-        node_labels=nx.get_node_attributes(G,'label')
-        plt.figure(figsize=(25, 20))
-        nx.draw(G, pos,labels=node_labels,node_size=800, node_color="skyblue", font_size=10, font_weight="bold", arrows=True)
-        plt.show()
+
+        pydot_graph = nx.nx_pydot.to_pydot(G)
+        pydot_graph.set_size('"12,10!"')
+        pydot_graph.set_ratio('fill')
+        pydot_graph.set("dpi", "600")
 
         image_base_path,current_folder_name,json_base_path=self.image_json_save_path()
         image_name=f"{current_folder_name}_depth_{self.depth_count}.png"
@@ -916,13 +936,34 @@ class Model(nn.Module):
         json_name=f"{current_folder_name}_depth_{self.depth_count}.json"
         json_absolute_path=os.path.join(json_base_path,json_name)
 
-        data=json_graph.node_link_data(G)
-        with open(json_absolute_path,"w") as f:
-            json.dump(data,f,indent=4)
+        draft_image_name=f"{current_folder_name}_final_draft.png"
+        draft_image_absolute_path=os.path.join(image_base_path,draft_image_name)
+        
+        draft_json_name=f"{current_folder_name}_final_draft.json"
+        draft_json_absolute_path=os.path.join(json_base_path,draft_json_name)
 
+        data=json_graph.node_link_data(G,edges="links")
+        if self.gen_count ==0 and self.depth_count == 0:
+            command = "refresh"
+        else:
+            command = "continue"
+        if self.depth_count<self.depth:
+            with open(json_absolute_path,"w") as f:
+                json.dump(data,f,indent=4, ensure_ascii= False)
+            pydot_graph.write_png(image_absolute_path)
+            self.graph_process.stdin.write(image_absolute_path +","+ command+ "\n")
+            self.graph_process.stdin.flush()
+            # subProc_path = self.graph_process.stdout.readline()
+            # print(f"Got: {subProc_path}")
 
-        plt.savefig(image_absolute_path)
-        plt.close()
+        elif self.depth_count==self.depth:
+            with open(draft_json_absolute_path,"w") as f:
+                json.dump(data,f,indent=4, ensure_ascii= False)
+            pydot_graph.write_png(draft_image_absolute_path,encoding='utf-8')
+            self.graph_process.stdin.write(draft_image_absolute_path +","+ command+ "\n")
+            self.graph_process.stdin.flush()
+            # subProc_path = self.graph_process.stdout.readline()
+            # print(f"Got: {subProc_path}")
 
     def clear_folder(self, folder_path):
         if os.path.exists(folder_path):
@@ -931,7 +972,6 @@ class Model(nn.Module):
                 if os.path.isfile(item_path):
                     os.remove(item_path)
                 elif os.path.isdir(item_path):
-                    import shutil
                     shutil.rmtree(item_path)
 
     #Zoho Labs Kottarakkara: Generate paths where the graph has to be saved 

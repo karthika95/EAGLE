@@ -11,7 +11,6 @@ from transformers import PreTrainedModel, PretrainedConfig, AutoConfig
 
 from .modeling_llama_kv import LlamaForCausalLM as KVLlamaForCausalLM
 from .modeling_mixtral_kv import MixtralForCausalLM as KVMixtralForCausalLM
-#from .modeling_qwen2_kv import LlamaForCausalLM as KVQwen2ForCausalLM
 from .modeling_qwen2_kv import Qwen2ForCausalLM as KVQwen2ForCausalLM
 from .utils import *
 from .kv_cache import initialize_past_key_values
@@ -54,6 +53,7 @@ class EaModel(nn.Module):
         if use_eagle3:
             self.ea_layer = Model(config, bias=bias, total_tokens=total_token, depth=depth, top_k=top_k,
                                   threshold=threshold, path=base_model_name_or_path,load_emb=True)
+            # print("The ea layer os being called")
         else:
             self.ea_layer = Model1(config, bias=bias, total_tokens=total_token, depth=depth, top_k=top_k,
                                   threshold=threshold, path=base_model_name_or_path,load_emb=True)

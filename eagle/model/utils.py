@@ -5,6 +5,7 @@ import random
 from typing import List, Tuple
 import time
 import torch
+from transformers import AutoTokenizer
 
 # TODO
 # from transformers import LlamaTokenizer
