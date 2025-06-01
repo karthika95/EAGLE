@@ -9,7 +9,7 @@ import sys
 import webbrowser
 
 
-IMAGE_REFRESH_DELAY = 5.0 # IN SECONDS
+IMAGE_REFRESH_DELAY = 1.0 # IN SECONDS
 path_queue = queue.Queue()
 
 # Background thread that listens for paths
