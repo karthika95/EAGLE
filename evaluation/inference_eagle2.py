@@ -31,14 +31,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--template",
         type=str,
-        default="vicuna",
-        choices=["vicuna", "llama3"]
+        default="tulu",
+        choices=["vicuna", "llama3", "tulu"]
     )
     parser.add_argument(
         "--model-type",
         type=str,
         required=True,
-        choices=["vicuna", "llama3"]
+        choices=["vicuna", "llama3", "tulu"]
     )
     parser.add_argument(
         "--ea-model-path",

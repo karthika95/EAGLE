@@ -70,7 +70,7 @@ def speed(jsonl_file, jsonl_file_base, tokenizer, task=None, report=True):
 
 
 def get_single_speedup(jsonl_file, jsonl_file_base, tokenizer_path):
-    for subtask_name in ["mt_bench", "translation", "summarization", "qa", "math_reasoning", "rag", "overall"]:
+    for subtask_name in ["mt_bench"]: #, "translation", "summarization", "qa", "math_reasoning", "rag", "overall"]:
         speed(jsonl_file, jsonl_file_base, tokenizer_path, task=subtask_name)
 
 
@@ -79,17 +79,19 @@ def get_mean_speedup(args):
     jsonl_file_name = args.file_path
     jsonl_file_base_name = args.base_path
     jsonl_file_run_list = [
-        "evaluation/data/spec_bench/model_answer_temp0_run_1/{}".format(jsonl_file_name),
-        "evaluation/data/spec_bench/model_answer_temp0_run_2/{}".format(jsonl_file_name),
-        "evaluation/data/spec_bench/model_answer_temp0_run_3/{}".format(jsonl_file_name)
+        # "evaluation/data/spec_bench/model_answer_temp0_run_1/{}".format(jsonl_file_name),
+        # "evaluation/data/spec_bench/model_answer_temp0_run_2/{}".format(jsonl_file_name),
+        # "evaluation/data/spec_bench/model_answer_temp0_run_3/{}".format(jsonl_file_name)
+        "evaluation/data/mt_bench/model_answer/{}".format(jsonl_file_name),
                            ]
     jsonl_file_base_run_list = [
-        "evaluation/data/spec_bench/model_answer_temp0_run_1/{}".format(jsonl_file_base_name),
-        "evaluation/data/spec_bench/model_answer_temp0_run_2/{}".format(jsonl_file_base_name),
-        "evaluation/data/spec_bench/model_answer_temp0_run_3/{}".format(jsonl_file_base_name)
+        # "evaluation/data/spec_bench/model_answer_temp0_run_1/{}".format(jsonl_file_base_name),
+        # "evaluation/data/spec_bench/model_answer_temp0_run_2/{}".format(jsonl_file_base_name),
+        # "evaluation/data/spec_bench/model_answer_temp0_run_3/{}".format(jsonl_file_base_name)
+        "evaluation/data/mt_bench/model_answer/{}".format(jsonl_file_base_name),
                            ]
 
-    for subtask_name in ["mt_bench", "translation", "summarization", "qa", "math_reasoning", "rag", "overall"]:
+    for subtask_name in ["mt_bench"]: #, "translation", "summarization", "qa", "math_reasoning", "rag", "overall"]:
         print("=" * 30, "Task: ", subtask_name, "=" * 30)
         tokens_per_second_list = []
         tokens_per_second_baseline_list = []
@@ -124,19 +126,19 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--file-path",
-        default='evaluation/data/spec_bench/model_answer/vicuna-7b-v1.3-sam_alpaca.jsonl',
+        default='evaluation/data/mt_bench/model_answer/airavata-samd-wordgroup.jsonl',
         type=str,
         help="The file path of evaluated Speculative Decoding methods.",
     )
     parser.add_argument(
         "--base-path",
-        default='evaluation/data/spec_bench/model_answer/vicuna-7b-v1.3.jsonl',
+        default='evaluation/data/mt_bench/model_answer/airavata-7b.jsonl',
         type=str,
         help="The file path of evaluated baseline.",
     )
     parser.add_argument(
         "--tokenizer-path",
-        default='/data/models/vicuna-7b-v1.3/',
+        default='ai4bharat/Airavata',
         type=str,
         help="The file path of evaluated baseline.",
     )
