@@ -13,8 +13,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from samd import SamdConfig, SamdModel, SamdGenerationConfig, DraftModel
+from samd.draft import CandidateType
 from samd.wordgroup_sam import WordGroupAwareSAM
-from samd.sam import DynSAM
+from samd.sam.wordgroup_dyn_sam import WordGroupAwareDynSAM
+from samd.sam.torch_static_sam import TorchStaticSAM
+from samd.wordgroup.grouping import boundaries_for_token_ids
 
 
 class WordGroupAwareDraftModel(DraftModel):
@@ -32,7 +35,7 @@ class WordGroupAwareDraftModel(DraftModel):
         disable_eagle: bool = False,
     ):
 
-        sam_dyn = DynSAM(config.n_predicts)
+        sam_dyn = WordGroupAwareDynSAM(config.n_predicts)
         self.disable_dyn = disable_dyn
         self.disable_eagle = disable_eagle
         
@@ -76,18 +79,33 @@ class WordGroupAwareDraftModel(DraftModel):
     def update(self, tokens=None, last_hidden_states=None, tree_tokens=None, tree_logits=None):
         if tokens is not None:
             tokens_list = tokens.tolist()
+            
+            # Compute word boundaries for the accepted tokens
+            text = self.tokenizer.decode(tokens_list, skip_special_tokens=True)
+            boundaries = boundaries_for_token_ids(
+                self.tokenizer,
+                text,
+                tokens_list
+            )
+            
             if self.tokenizer:
                 decoded_tokens = [self.tokenizer.decode([t], skip_special_tokens=True) for t in tokens_list]
-                decoded_text = self.tokenizer.decode(tokens_list, skip_special_tokens=True)
                 print(f"\nUpdating with {len(tokens_list)} accepted tokens:")
                 print(f"Tokens: {tokens_list}")
                 print(f"Decoded: {decoded_tokens}")
-                print(f"Combined: '{decoded_text}'")
+                print(f"Combined: '{text}'")
+                print(f"Boundaries: {boundaries}")
             else:
                 print(f"\nUpdating Dynamic SAM with {len(tokens_list)} accepted tokens: {tokens_list}")
+            
+            # Add tokens with boundaries to dynamic SAM
             if not self.disable_dyn:
-                self.sam_dyn.add_tokens(tokens_list)
-            self.sam_static.transfer_tokens(tokens_list)
+                self.sam_dyn.add_tokens(tokens_list, boundaries)
+            
+            # Transfer tokens to static SAM (also supports boundaries now)
+            if self.sam_static is not None:
+                self.sam_static.transfer_tokens(tokens_list)
+            
             if self._last_method is not None:
                 stats = self.method_stats[self._last_method]
                 stats["accepted_tokens"] += len(tokens_list)
@@ -126,8 +144,6 @@ class WordGroupAwareDraftModel(DraftModel):
         threshold_met = best_match >= self.len_threshold
 
         if threshold_met or self.disable_eagle:
-            from samd.draft import CandidateType
-            
             use_dynamic = (not self.disable_dyn) and (match_dyn >= match_static)
 
             if use_dynamic:
@@ -160,14 +176,12 @@ class WordGroupAwareDraftModel(DraftModel):
         else:
             if self.disable_eagle:
                 print("Tree model disabled; resorting to STATIC SAM despite threshold miss")
-                from samd.draft import CandidateType
                 self.static_sam_accepts += 1
                 seq = self.sam_static.gen_draft(index_static, start_token)
                 return (CandidateType.sequence, "static", seq, {})
 
             print(f" Neither SAM meets threshold (best={best_match} < {self.len_threshold}), using TREE/EAGLE model")
             self.eagle_accepts += 1
-            from samd.draft import CandidateType
             tree_tokens, buffers_kwargs = self.tree_model.gen_draft(start_token)
             tree_len = len(tree_tokens)
             stats = self.method_stats["tree"]
@@ -179,17 +193,48 @@ class WordGroupAwareDraftModel(DraftModel):
 
 
 def load_wordgroup_sam(path: str):
+    """Load SAM from pickle or PyTorch format (auto-detect)"""
+    
+    # Auto-detect PyTorch format
+    if path.endswith('.pt'):
+        # Fast PyTorch loading
+        sam = TorchStaticSAM.load_torch(path, device='cpu')
+        return sam
+    
+    # Check if .pt version exists
+    # pt_path = path.replace('.pkl', '.pt')
+    # if os.path.exists(pt_path):
+    #     print(f"Found PyTorch version: {pt_path}")
+    #     print(f"Using fast loader (recommended over pickle)")
+    #     print(f"Hint: Update --sam_path to {pt_path} to skip this check\n")
+    #     sam = TorchStaticSAM.load_torch(pt_path, device='cpu')
+    #     return sam
+    
+    # # Fall back to pickle
     print(f"Loading word-group-aware SAM from {path}...")
+    # print(f"(This is slow - consider converting to .pt format)")
+    # print(f"Run: python tools/convert_sam_to_torch.py {path} {pt_path}\n")
     start = time.perf_counter()
     
     with open(path, "rb") as f:
         sam = pickle.load(f)
     
     end = time.perf_counter()
-    print(f"Loaded SAM in {end - start:.2f} seconds")
+    print(f"Loaded SAM in {end - start:.2f} seconds ({(end-start)/60:.1f} minutes)")
     print(f"  States: {len(sam.states)}")
-    print(f"  Tokens: {len(sam.input_ids)}")
-    print(f"  Word boundaries: {sum(sam.word_boundaries)}")
+    
+    # Handle both tensor and list versions
+    if hasattr(sam, '_input_ids_tensor') and sam._input_ids_tensor is not None:
+        print(f"  Tokens: {len(sam._input_ids_tensor)}")
+    else:
+        print(f"  Tokens: {len(sam.input_ids)}")
+    
+    if hasattr(sam, 'word_boundaries'):
+        # Check if it's a tensor or list
+        if hasattr(sam, '_word_boundaries_tensor') and sam._word_boundaries_tensor is not None:
+            print(f"  Word boundaries: {sam._word_boundaries_tensor.sum().item()}")
+        elif sam.word_boundaries:
+            print(f"  Word boundaries: {sum(sam.word_boundaries)}")
     
     return sam
 
@@ -307,6 +352,11 @@ def parse_args():
         action='store_true',
         help='Skip baseline generation (speedup will be 0 if skipped)'
     )
+    parser.add_argument(
+        '--interactive',
+        action='store_true',
+        help='Run in interactive mode - load SAM once and run multiple inferences'
+    )
     
     args = parser.parse_args()
     args.dtype = {
@@ -319,8 +369,6 @@ def parse_args():
 
 @torch.inference_mode()
 def samd_generate_wordgroup(args, inputs, model, tokenizer, sam):
-
-    from samd.sam import DynSAM
     
     samd_config = SamdConfig(
         n_predicts=args.samd_n_predicts,
@@ -348,6 +396,7 @@ def samd_generate_wordgroup(args, inputs, model, tokenizer, sam):
         tokenizer.eos_token_id,
         args.dtype,
         args.device,
+        tokenizer=tokenizer,
     )
     samd_model.eval()
     
@@ -388,10 +437,10 @@ def samd_generate_wordgroup(args, inputs, model, tokenizer, sam):
     print("ACCEPTANCE STATISTICS")
     print("="*80)
     total_lookups = draft.static_sam_accepts + draft.dynamic_sam_accepts + draft.eagle_accepts
-    print(f"{draft.static_sam_accepts:3d} times ({draft.static_sam_accepts/total_lookups*100:5.1f}%)")
-    print(f"{draft.dynamic_sam_accepts:3d} times ({draft.dynamic_sam_accepts/total_lookups*100:5.1f}%)")
-    print(f"{draft.eagle_accepts:3d} times ({draft.eagle_accepts/total_lookups*100:5.1f}%)")
-    print(f"{total_lookups:3d}")
+    print(f"Static SAM accepted: {draft.static_sam_accepts:3d} times ({draft.static_sam_accepts/total_lookups*100:5.1f}%)")
+    print(f"Dynamic SAM accepted: {draft.dynamic_sam_accepts:3d} times ({draft.dynamic_sam_accepts/total_lookups*100:5.1f}%)")
+    print(f"EAGLE accepted: {draft.eagle_accepts:3d} times ({draft.eagle_accepts/total_lookups*100:5.1f}%)")
+    print(f"Total lookups: {total_lookups:3d}")
     print("="*80)
     
     print("\n" + "-"*80)
@@ -559,6 +608,172 @@ def append_results_row(csv_path: str, row: Dict[str, Any]):
         writer.writerow(row)
 
 
+def interactive_mode(args, model, tokenizer, sam):
+    """Interactive mode for running multiple inferences without reloading SAM"""
+    
+    print("\n" + "="*80)
+    print("INTERACTIVE MODE - SAM LOADED")
+    print("="*80)
+    print("You can now run multiple inferences with different parameters.")
+    print("\nCommands:")
+    print("  • :prompt <text>                - Set the prompt for generation")
+    print("  • :set len_threshold <value>    - Change len_threshold")
+    print("  • :set len_bias <value>         - Change len_bias")
+    print("  • :set disable_dyn <true/false> - Toggle dynamic SAM")
+    print("  • :set disable_eagle <true/false> - Toggle EAGLE/tree fallback")
+    print("  • :set max_new_tokens <value>   - Change max_new_tokens")
+    print("  • :set samd_n_predicts <value>  - Change n_predicts")
+    print("  • :run or :generate             - Run inference with current prompt & settings")
+    print("  • :show                         - Show current settings & prompt")
+    print("  • :baseline                     - Run baseline generation with current prompt")
+    print("  • :quit or :exit                - Exit interactive mode")
+    print("="*80)
+    print("\nWorkflow: Set parameters → Set prompt →  :run")
+    
+    # Show initial settings
+    print(f"\nInitial settings:")
+    print(f"  len_threshold: {args.len_threshold}")
+    print(f"  len_bias: {args.len_bias}")
+    print(f"  disable_dyn: {args.disable_dyn}")
+    print(f"  disable_eagle: {args.disable_eagle}")
+    print(f"  samd_n_predicts: {args.samd_n_predicts}")
+    print(f"  max_new_tokens: {args.max_new_tokens}")
+    
+    # Current prompt
+    current_prompt = None
+    
+    while True:
+        try:
+            print("\n" + "-"*80)
+            user_input = input(">>> ").strip()
+            
+            if not user_input:
+                continue
+            
+            # Exit commands
+            if user_input.lower() in [':quit', ':exit', ':q']:
+                print("Exiting interactive mode...")
+                break
+            
+            # Set parameter commands
+            if user_input.startswith(':set '):
+                parts = user_input[5:].split(maxsplit=1)
+                if len(parts) >= 2:
+                    param = parts[0]
+                    value = parts[1]
+                    
+                    try:
+                        if param == 'len_threshold':
+                            args.len_threshold = int(value)
+                            print(f"✓ Set len_threshold to {args.len_threshold}")
+                        elif param == 'len_bias':
+                            args.len_bias = int(value)
+                            print(f"✓ Set len_bias to {args.len_bias}")
+                        elif param == 'disable_dyn':
+                            args.disable_dyn = str2bool(value)
+                            print(f"✓ Set disable_dyn to {args.disable_dyn}")
+                        elif param == 'disable_eagle':
+                            args.disable_eagle = str2bool(value)
+                            print(f"✓ Set disable_eagle to {args.disable_eagle}")
+                        elif param == 'max_new_tokens':
+                            args.max_new_tokens = int(value)
+                            print(f"✓ Set max_new_tokens to {args.max_new_tokens}")
+                        elif param == 'samd_n_predicts':
+                            args.samd_n_predicts = int(value)
+                            print(f"✓ Set samd_n_predicts to {args.samd_n_predicts}")
+                        else:
+                            print(f"✗ Unknown parameter: {param}")
+                            print("  Available: len_threshold, len_bias, disable_dyn, disable_eagle, max_new_tokens, samd_n_predicts")
+                    except ValueError as e:
+                        print(f"✗ Invalid value for {param}: {value} ({e})")
+                else:
+                    print("✗ Usage: :set <parameter> <value>")
+                continue
+            
+            # Show settings command
+            if user_input == ':show':
+                print(f"\nCurrent settings:")
+                print(f"  len_threshold: {args.len_threshold}")
+                print(f"  len_bias: {args.len_bias}")
+                print(f"  disable_dyn: {args.disable_dyn}")
+                print(f"  disable_eagle: {args.disable_eagle}")
+                print(f"  samd_n_predicts: {args.samd_n_predicts}")
+                print(f"  max_new_tokens: {args.max_new_tokens}")
+                print(f"  max_cache_len: {args.max_cache_len}")
+                if current_prompt:
+                    print(f"  prompt: '{current_prompt}'")
+                else:
+                    print(f"  prompt: <not set>")
+                continue
+            
+            # Set prompt command
+            if user_input.startswith(':prompt '):
+                current_prompt = user_input[8:].strip()
+                if current_prompt:
+                    print(f"✓ Prompt set to: '{current_prompt}'")
+                    print(f"  Use ':run' to generate")
+                else:
+                    print("✗ Empty prompt")
+                continue
+            
+            # Run/Generate command
+            if user_input.lower() in [':run', ':generate', ':gen']:
+                if not current_prompt:
+                    print("✗ No prompt set. Use ':prompt <text>' to set a prompt first")
+                    continue
+                
+                print(f"\n{'='*80}")
+                print(f"Running inference...")
+                print(f"{'='*80}")
+                print(f"Prompt: {current_prompt}")
+                print(f"Settings: threshold={args.len_threshold}, bias={args.len_bias}, "
+                      f"dyn={'off' if args.disable_dyn else 'on'}, eagle={'off' if args.disable_eagle else 'on'}")
+                
+                inputs = tokenizer([current_prompt], padding=True, return_tensors="pt").to(args.device)
+                
+                # Run generation
+                samd_metrics = samd_generate_wordgroup(args, inputs, model, tokenizer, sam)
+                
+                # Optionally save results
+                save_result = input("\nSave this result to CSV? (y/n): ").strip().lower()
+                if save_result == 'y':
+                    baseline_metrics = None
+                    row = build_results_row(args, current_prompt, samd_metrics, baseline_metrics)
+                    append_results_row(args.results_csv, row)
+                    print(f"✓ Results saved to {args.results_csv}")
+                continue
+            
+            # Baseline command
+            if user_input.startswith(':baseline'):
+                if not current_prompt:
+                    print("✗ No prompt set. Use ':prompt <text>' to set a prompt first")
+                    continue
+                
+                print(f"\nRunning baseline with prompt: {current_prompt}")
+                inputs = tokenizer([current_prompt], padding=True, return_tensors="pt").to(args.device)
+                baseline_generate(args, inputs, model, tokenizer)
+                continue
+            
+            # If no command matched, show help
+            print("✗ Unknown input. Available commands:")
+            print("  :prompt <text>  - Set prompt")
+            print("  :set <param> <value>  - Set parameter")
+            print("  :run            - Run inference")
+            print("  :show           - Show settings")
+            print("  :baseline       - Run baseline")
+            print("  :quit           - Exit")
+            print("Type ':show' to see all commands")
+        
+        except KeyboardInterrupt:
+            print("\n(Use ':quit' to exit)")
+            continue
+        except Exception as e:
+            print(f"\n✗ Error: {e}")
+            import traceback
+            traceback.print_exc()
+            print("\nYou can continue with another prompt or ':quit' to exit")
+
+
 def main():
     args = parse_args()
     
@@ -587,6 +802,15 @@ def main():
         print("Proceeding without static SAM (will use dynamic SAM only)")
         sam = None
     
+    # Check if interactive mode is enabled
+    if args.interactive:
+        if sam is None:
+            print("Error: Interactive mode requires a valid SAM file")
+            return
+        interactive_mode(args, model, tokenizer, sam)
+        return
+    
+    # Single-shot mode (original behavior)
     if args.prompt:
         prompt = args.prompt
     else:

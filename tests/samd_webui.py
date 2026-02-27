@@ -1,4 +1,3 @@
-#Import necessary libraries
 import argparse
 import pickle
 import gradio as gr 
@@ -17,6 +16,8 @@ from transformers import (
     LlamaConfig,
     LlamaTokenizer
 )
+import collections
+import gc
 import webbrowser
 from samd import (
     SamdConfig, 
@@ -31,17 +32,18 @@ from samd.wordgroup_sam import WordGroupAwareSAM
 from samd.wordgroup.grouping import boundaries_for_token_ids
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model_path', type=str, default=" ")
-parser.add_argument('--sam_path', type=str, default=" ")#Provide the directory path of the shards
+parser.add_argument('--model_path', type=str, default="/home/aravind-21661-t/GokulG/bharatgenexperiments/Models/Airavata")
+parser.add_argument('--sam_path', type=str, default="/home/aravind-21661-t/GokulG/EAGLE/downloads/sharded_sam/data_shraded")
 parser.add_argument('--wordgroup_sam', action='store_true', help='Treat sam_path as a word-group-aware SAM pickle')
 parser.add_argument('--samd_n_predicts', type=int, default=10)
 parser.add_argument('--max_new_tokens', type=int, default=512)
 parser.add_argument('--max_cache_len', type=int, default=2048)
 parser.add_argument("--tree_method", type=str, default="eagle2")
-parser.add_argument("--tree_model_path", type=str, default=" ")
+parser.add_argument("--tree_model_path", type=str, default="/home/aravind-21661-t/GokulG/bharatgenexperiments/Models/draft_model/Airavata_Draft")
 parser.add_argument('--len_threshold', type=int, default=5)
 parser.add_argument('--len_bias', type=int, default=5)
 parser.add_argument('--disable_dyn', action='store_true', help='Disable dynamic SAM drafting')
+parser.add_argument('--disable_static', action='store_true', help='Disable static SAM drafting')
 parser.add_argument('--disable_eagle', action='store_true', help='Disable tree/EAGLE fallback')
 parser.add_argument('--dtype', type=str, default='float16', choices=['float16', 'float32'])
 parser.add_argument('--device', type=str, default="cuda", choices=['cuda', 'cpu'])
@@ -52,6 +54,7 @@ args.dtype = {
     'float32': torch.float32,
 }[args.dtype]
 
+# load the model and set to evaluation mode
 tokenizer = AutoTokenizer.from_pretrained(args.model_path)
 
 model = AutoModelForCausalLM.from_pretrained(
@@ -61,6 +64,22 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 model.eval()
 
+def load_wordgroup_sam(path: str):
+    """Load a word-group-aware SAM pickle and return it (or None if not found)."""
+    if path is None:
+        return None
+    try:
+        with open(path, "rb") as f:
+            sam = pickle.load(f)
+        if not isinstance(sam, WordGroupAwareSAM):
+            print("[WARN] Loaded SAM is not WordGroupAwareSAM; proceeding anyway.")
+        return sam
+    except FileNotFoundError:
+        print(f"[WARN] wordgroup SAM not found at {path}; continuing without static SAM")
+        return None
+
+
+
 class ShardedWordGroupSAM:
 
     def __init__(self, shard_dir):
@@ -68,7 +87,7 @@ class ShardedWordGroupSAM:
         self.shard_dir = shard_dir
 
         meta_path = os.path.join(shard_dir, "sam_meta.pt")
-        meta = torch.load(meta_path, map_location="cpu", mmap=True, weights_only=False)
+        meta = torch.load(meta_path, map_location="cpu", mmap=False, weights_only=False)
 
         self.n_predicts = int(meta["n_predicts"])
         self.n_states = int(meta["num_states"])
@@ -93,19 +112,35 @@ class ShardedWordGroupSAM:
 
         self.loaded_shard_id = None
         self.loaded = None
+        
+        self.cache = collections.OrderedDict()
+        self.cache_size = 200  # ~1.2GB RAM, covers ~9% of shards for better stability
 
     def _load_shard(self, shard_id):
 
-        if shard_id == self.loaded_shard_id:
+        if shard_id in self.cache:
+            self.cache.move_to_end(shard_id)
+            self.loaded = self.cache[shard_id]
+            self.loaded_shard_id = shard_id
             return
+
+        print(f"Loading shard {shard_id}")
         obj = torch.load(
             self.shards[shard_id],
             map_location="cpu",
             mmap=True,
             weights_only=False
         )
+
         self.loaded = obj
         self.loaded_shard_id = shard_id
+        
+        self.cache[shard_id] = obj
+        
+        if len(self.cache) > self.cache_size:
+            oldest_id, _ = self.cache.popitem(last=False)
+            print(f"Evicted shard {oldest_id} from cache")
+            gc.collect() 
 
     def get_state(self, index):
 
@@ -123,6 +158,8 @@ class ShardedWordGroupSAM:
 
 
 class WordGroupAwareDraftModel(DraftModel):
+    """Draft model that is aware of word-group static SAM and reports seqtype."""
+
     def __init__(
         self,
         config,
@@ -133,6 +170,7 @@ class WordGroupAwareDraftModel(DraftModel):
         tokenizer=None,
         disable_dyn: bool = False,
         disable_eagle: bool = False,
+        disable_static: bool = False,
     ):
         from samd.sam.wordgroup_dyn_sam import WordGroupAwareDynSAM
 
@@ -140,6 +178,7 @@ class WordGroupAwareDraftModel(DraftModel):
 
         self.disable_dyn = disable_dyn
         self.disable_eagle = disable_eagle
+        self.disable_static = disable_static
         self.tokenizer = tokenizer
 
         super().__init__(
@@ -166,7 +205,7 @@ class WordGroupAwareDraftModel(DraftModel):
             if not self.disable_dyn:
                 self.sam_dyn.add_tokens(token_list, boundaries)
 
-            if self.sam_static is not None:
+            if self.sam_static is not None and not self.disable_static:
                 self.sam_static.transfer_tokens(token_list)
 
         if not self.disable_eagle:
@@ -185,7 +224,10 @@ class WordGroupAwareDraftModel(DraftModel):
         else:
             index_dyn, match_dyn = -1, float('-inf')
 
-        index_static, match_static, counter = self.sam_static.lookup(start_token, step, counter)
+        if not self.disable_static and self.sam_static is not None:
+            index_static, match_static, counter = self.sam_static.lookup(start_token, step, counter)
+        else:
+            index_static, match_static = -1, float('-inf')
         match_static -= self.len_bias
 
         best_match = max(match_dyn, match_static)
@@ -207,7 +249,10 @@ class WordGroupAwareDraftModel(DraftModel):
 @torch.inference_mode()
 def samd_generate(args, inputs, model, tokenizer):
     assert inputs.input_ids.shape[-1] + args.max_new_tokens <= args.max_cache_len
-    if args.wordgroup_sam:
+    
+    if args.disable_static:
+        sam = None
+    elif args.wordgroup_sam:
         sharded = ShardedWordGroupSAM(args.sam_path)
         sam = sharded.sam
         sam.get_state = sharded.get_state
@@ -232,6 +277,7 @@ def samd_generate(args, inputs, model, tokenizer):
             tokenizer=tokenizer,
             disable_dyn=args.disable_dyn,
             disable_eagle=args.disable_eagle,
+            disable_static=args.disable_static,
         )
     else:
         draft = DraftModel(
@@ -261,42 +307,27 @@ def samd_generate(args, inputs, model, tokenizer):
     return gen
         
 
-def user(current_text, chatbot, session_state):
+def user(current_text,chatbot,session_state):
     if chatbot is None:
-        chatbot = []
-
-    pure_history = session_state.get("pure_history", [])
-    pure_history.append([current_text, None])
-    session_state["pure_history"] = pure_history
-
-    chatbot.append({"role": "user", "content": current_text})
-    chatbot.append({"role": "assistant", "content": ""})
-
-    return "", chatbot, session_state
-
-def clear(history, session):
-    pure_history = []
-    session["pure_history"] = pure_history
-    history = []   
-    return history, session
-
-def regenerate(history, session_state):
+        chatbot=[]
+    pure_history=session_state.get("pure_history",[])
+    pure_history+=[[current_text,None]]
+    session_state["pure_history"]=pure_history
+    return "",chatbot+[[current_text,None]],session_state
+def clear(history,session):
+    pure_history=[]
+    session["pure_history"]=pure_history
+    history=pure_history
+    return history,session
+def regenerate(history,session_state):
     if history is None:
-        history = []
-
-    pure_history = session_state.get("pure_history", [])
-    if not pure_history or not history:
-        return history, session_state
-
-    pure_history[-1][1] = None
-    session_state["pure_history"] = pure_history
-
-    last_msg = history[-1]
-    if isinstance(last_msg, dict) and last_msg.get("role") == "assistant":
-        last_msg["content"] = ""
-    history[-1] = last_msg
-
-    return history, session_state 
+        history=[]
+    pure_history=session_state.get("pure_history",[])
+    pure_history[-1][-1]=None
+    session_state["pure_history"]=pure_history
+    history[-1][-1]=None
+    return history,session_state
+    
 
 def bot(chatbot,session_state):
     pure_history=session_state.get("pure_history",[])
@@ -317,11 +348,15 @@ def bot(chatbot,session_state):
     all_ids=[]
     previous_output=""
     
+    start_time = time.time()
+    total_tokens = 0
+    
     for chunk in gen:
         token_ids = chunk["ids"]
         seqtype = chunk["seqtype"]
         color = colour_data.get(seqtype)
         all_ids.extend(token_ids)
+        total_tokens += len(token_ids)
 
         output_so_far = tokenizer.decode(all_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
         token_text = output_so_far[len(previous_output):]
@@ -353,11 +388,22 @@ def bot(chatbot,session_state):
         colored_token=token_text
         raw_response+=token_text
         coloured_response += colored_token
-        chatbot[-1]["content"] = coloured_response
-        yield chatbot, session_state
+        chatbot[-1][1]=coloured_response
+        
+        elapsed_time = time.time() - start_time
+        tokens_per_sec = total_tokens / elapsed_time if elapsed_time > 0 else 0
+        speed_info = f"**Speed:** {tokens_per_sec:.2f} tokens/sec | **Total Tokens:** {total_tokens}"
+        
+        yield chatbot, session_state, speed_info
 
     pure_history[-1][1] = raw_response
     session_state["pure_history"] = pure_history
+    
+    elapsed_time = time.time() - start_time
+    tokens_per_sec = total_tokens / elapsed_time if elapsed_time > 0 else 0
+    speed_info = f"**Speed:** {tokens_per_sec:.2f} tokens/sec | **Total Tokens:** {total_tokens} | **Time:** {elapsed_time:.2f}s"
+    
+    yield chatbot, session_state, speed_info
 
 
 
@@ -381,13 +427,16 @@ custom_css="""
 }
 """
 
-with gr.Blocks() as demo:
+with gr.Blocks(css=custom_css) as demo:
     gr.Markdown("""
     <h1 style="text-align:center; color: orange;">SAM-CHATBOT</h1>
     """)
     gs=gr.State({"pure_history": []})
     chatbot=gr.Chatbot(height=600, show_label=False)
     msg=gr.Textbox(label="Input")
+    
+    speed_display = gr.Markdown(value="**Speed:** -- tokens/sec", label="Generation Speed")
+    
     with gr.Row():
         send_button=gr.Button("Send",elem_id="send_button")
         stop_button=gr.Button("Stop",elem_id="stop_button")
@@ -397,11 +446,11 @@ with gr.Blocks() as demo:
             gr.Markdown("""
         <h3 style="text-align:center; color: white;">⚪-Verifier 🟢-EAGLE  🟠-Static 🔴-Dynamic</h3>
         """)
-    enter_event=msg.submit(user,[msg,chatbot,gs],[msg,chatbot,gs]).then(bot,[chatbot,gs],[chatbot,gs])
-    send_event=send_button.click(user,[msg,chatbot,gs],[msg,chatbot,gs]).then(bot,[chatbot,gs],[chatbot,gs])
+    enter_event=msg.submit(user,[msg,chatbot,gs],[msg,chatbot,gs]).then(bot,[chatbot,gs],[chatbot,gs,speed_display])
+    send_event=send_button.click(user,[msg,chatbot,gs],[msg,chatbot,gs]).then(bot,[chatbot,gs],[chatbot,gs,speed_display])
     clear_event=clear_button.click(clear,[chatbot,gs],[chatbot,gs],cancels=[enter_event,send_event])
-    regenerate_event=regenerate_button.click(regenerate,[chatbot,gs],[chatbot,gs]).then(bot,[chatbot,gs],[chatbot,gs])
+    regenerate_event=regenerate_button.click(regenerate,[chatbot,gs],[chatbot,gs]).then(bot,[chatbot,gs],[chatbot,gs,speed_display])
     stop_event=stop_button.click(None,None,None,cancels=[send_event,enter_event])
 
 
-demo.launch(server_name="0.0.0.0", server_port=5500, share=True, css=custom_css)
+demo.launch(server_name="0.0.0.0", server_port=5500)

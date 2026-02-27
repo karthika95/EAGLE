@@ -30,7 +30,7 @@ class WordGroupAwareSAM(StaticSAM):
             boundaries = data['word_group_boundaries']
             
             if len(tokens) != len(boundaries):
-                print(f"Warning: Token length {len(tokens)} != boundary length {len(boundaries)}, skipping")
+                # print(f"Warning: Token length {len(tokens)} != boundary length {len(boundaries)}, skipping")
                 continue
                 
             self.add_tokens_with_boundaries(tokens, boundaries)
@@ -47,11 +47,11 @@ class WordGroupAwareSAM(StaticSAM):
     
     def gen_draft(self, index: int, start_token: int):
 
-        print(f"[STATIC SAM] Generating draft...")
-        print(":" * 80)
+        # print(f"[STATIC SAM] Generating draft...")
+        # print(":" * 80)
 
         if index == 0:
-            print(f"[STATIC SAM] No match found, returning empty draft")
+            # print(f"[STATIC SAM] No match found, returning empty draft")
             return [start_token] + [0] * (self.n_predicts - 1)
 
         endpos = self.get_state(index).min_endpos
@@ -82,11 +82,11 @@ class WordGroupAwareSAM(StaticSAM):
         while len(pred_ids) < self.n_predicts:
             pred_ids.append(0)
 
-        print(
-            f"[STATIC SAM] Draft: "
-            f"{len([t for t in pred_ids if t != 0])} tokens "
-            f"(first 5: {pred_ids[:5]})"
-        )
+        # print(
+        #     f"[STATIC SAM] Draft: "
+        #     f"{len([t for t in pred_ids if t != 0])} tokens "
+        #     f"(first 5: {pred_ids[:5]})"
+        # )
 
         return pred_ids
 

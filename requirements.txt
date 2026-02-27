@@ -1,6 +1,8 @@
 accelerate
 datasets
 fastchat
+fschat
+gradio
 huggingface_hub[cli]
 prompt_toolkit
 protobuf
@@ -8,3 +10,4 @@ rich
 sentencepiece
 tiktoken
 transformers==4.47.0
+shortuuid
