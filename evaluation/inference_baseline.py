@@ -13,31 +13,39 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def baseline_forward(inputs, model, tokenizer, max_new_tokens, temperature=0.0, do_sample=False):
     input_ids = inputs.input_ids
+    gen_kwargs = {
+        "max_new_tokens": max_new_tokens,
+        "do_sample": do_sample,
+    }
+    if do_sample:
+        gen_kwargs["temperature"] = temperature
+    else:
+        gen_kwargs["temperature"] = None
+        gen_kwargs["top_p"] = None
+        
     output_ids = model.generate(
         input_ids,
-        do_sample=do_sample,
-        temperature=temperature,
-        max_new_tokens=max_new_tokens,
+        **gen_kwargs
     )
+
     new_token = len(output_ids[0][len(input_ids[0]):])
     step = new_token
     accept_length_list = [1] * new_token
     return output_ids, new_token, step, accept_length_list
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--template",
         type=str,
-        default="tulu",
-        choices=["vicuna", "llama3", "tulu"]
+        required=True,
+        choices=["vicuna", "llama3", "tulu", "param"]
     )
     parser.add_argument(
         "--model-type",
         type=str,
         required=True,
-        choices=["vicuna", "llama3", "tulu"]
+        choices=["vicuna", "llama3", "tulu", "param"]
     )
     parser.add_argument(
         "--model-path",
@@ -112,7 +120,8 @@ if __name__ == "__main__":
         args.model_path,
         torch_dtype=str_to_torch_dtype(args.dtype),
         low_cpu_mem_usage=True,
-        device_map="auto"
+        device_map="auto",
+        trust_remote_code=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)

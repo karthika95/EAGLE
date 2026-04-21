@@ -13,6 +13,7 @@ from transformers import PreTrainedModel, PretrainedConfig,AutoConfig
 from .modeling_llama_kv import LlamaForCausalLM as KVLlamaForCausalLM
 from .modeling_mixtral_kv import MixtralForCausalLM as KVMixtralForCausalLM
 from .modeling_qwen2_kv import LlamaForCausalLM as KVQwen2ForCausalLM
+from .modeling_parambharatgen import ParamBharatGenForCausalLM
 from .utils import *
 from .kv_cache import initialize_past_key_values
 
@@ -43,8 +44,8 @@ class EaModel(nn.Module):
         self.hidden_size = base_model.lm_head.weight.shape[-1]
         self.vocab_size = base_model.lm_head.weight.shape[0]
         self.base_model_name_or_path = base_model_name_or_path
-        self.tokenizer = AutoTokenizer.from_pretrained(self.base_model_name_or_path,use_fast=False)
-        config = EConfig.from_pretrained(ea_model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.base_model_name_or_path,use_fast=False, trust_remote_code=True)
+        config = EConfig.from_pretrained(ea_model_path, trust_remote_code=True)
         with open(ea_model_path,"r") as f:
             con=json.loads(f.read())
         try:
@@ -90,13 +91,17 @@ class EaModel(nn.Module):
             **kwargs,
     ):
         #assert Type=="LLaMA" or "Mixtral"
-        Type=AutoConfig.from_pretrained(base_model_path).architectures[0]
+        Type=AutoConfig.from_pretrained(base_model_path, trust_remote_code=True).architectures[0]
         if Type=='LlamaForCausalLM':
             base_model = KVLlamaForCausalLM.from_pretrained(
                 base_model_path, **kwargs
             )
         elif Type=='Qwen2ForCausalLM':
             base_model=KVQwen2ForCausalLM.from_pretrained(
+                base_model_path, **kwargs
+            )
+        elif Type == 'ParamBharatGenForCausalLM':
+            base_model = ParamBharatGenForCausalLM.from_pretrained(
                 base_model_path, **kwargs
             )
         else:

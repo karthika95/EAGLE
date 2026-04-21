@@ -42,13 +42,13 @@ if __name__ == "__main__":
         "--template",
         type=str,
         default="vicuna",
-        choices=["vicuna", "llama3"]
+        choices=["vicuna", "llama3", "tulu"]
     )
     parser.add_argument(
         "--model-type",
         type=str,
         required=True,
-        choices=["vicuna", "llama3"]
+        choices=["vicuna", "llama3", "tulu"]
     )
     parser.add_argument(
         "--model-path",
