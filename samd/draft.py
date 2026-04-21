@@ -11,8 +11,6 @@ from transformers import AutoTokenizer
 
 from profile_utils import profile_decorator, profile_lookup_decorator
 
-# from transformers import LlamaTokenizer
-# tokenizer: LlamaTokenizer = LlamaTokenizer.from_pretrained('/data/models/vicuna-7b-v1.3')
 
 class CandidateType(str, Enum):
     sequence = "sequence"
@@ -56,7 +54,7 @@ class DraftModel(torch.nn.Module):
         index_dyn, match_dyn,counter = self.sam_dyn.lookup(start_token,step,counter)#retrives the index and the length
         index_static, match_static,counter = self.sam_static.lookup(start_token,step,counter)
 
-        # match_static -= self.len_bias
+        match_static -= self.len_bias
         #The match length of the static and dynamic are being compared 
         if max(match_dyn, match_static) >= self.len_threshold:
             if match_dyn >= match_static:

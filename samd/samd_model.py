@@ -188,17 +188,13 @@ class SamdModel(nn.Module):
             candidate_last_hidden_states,
         )
 
-        # Minimal, human-readable trace for each decoding step
         proposed_ids = candidates.candidate_tokens[best_candidate][:accept_length].tolist()
         
-        # ensure accepted_ids is a plain Python list of ints regardless of input type
         if isinstance(new_tokens, torch.Tensor):
             accepted_ids = new_tokens.tolist()
         elif isinstance(new_tokens, list):
-            # already a list (e.g., some draft/tree paths return lists); copy to be safe
             accepted_ids = list(new_tokens)
         else:
-            # try one last time to convert iterable -> list, otherwise raise a clear error
             try:
                 accepted_ids = list(new_tokens)
             except Exception:
@@ -208,14 +204,13 @@ class SamdModel(nn.Module):
         def _decode(ids):
             if self.tokenizer is None:
                 return ids
-            # drop padding zeros for readability
             nz = [i for i in ids if i != 0]
             return self.tokenizer.decode(nz, skip_special_tokens=True) if nz else ""
         proposed_txt = _decode(proposed_ids)
         accepted_txt = _decode(accepted_ids)
         verifier_only = len(accepted_ids) <= 1
         flag = " (verifier only)" if verifier_only else ""
-        print(f"[step {step}] method={candidates.seqtype} proposed='{proposed_txt}' accepted='{accepted_txt}'{flag}")
+        # print(f"[step {step}] method={candidates.seqtype} proposed='{proposed_txt}' accepted='{accepted_txt}'{flag}")
 
         return sample_p, new_tokens, candidates.seqtype
 
@@ -352,6 +347,7 @@ class SamdModel(nn.Module):
 
             # Yield only new characters
             new_text = full_ids[streamed_len:]
+            
             if new_text:
                 yield {"ids": new_text,"seqtype":seqtype}
                 streamed_len += len(new_text)

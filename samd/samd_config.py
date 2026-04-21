@@ -10,8 +10,8 @@ from enum import Enum
 class SamdConfig:
     n_predicts: int = field(default=40)
     max_predicts: int = field(default=70)
-    len_threshold: int = field(default=5)   # Minimum length to consider for SAM decoding, else use EAGLE
-    len_bias: int = field(default=5)    # Static SAM should generate len_bias more tokens than Dyn SAM to get considered
+    len_threshold: int = field(default=3)   # Minimum length to consider for SAM decoding, else use EAGLE
+    len_bias: int = field(default=2)    # Static SAM should generate len_bias more tokens than Dyn SAM to get considered
     cache_type: Literal["dynamic", "static"] = field(
         default="static"
     )

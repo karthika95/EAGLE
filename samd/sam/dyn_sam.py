@@ -58,10 +58,6 @@ class DynSAM:
     def expand_state(self, state: SAMState):
         new_index = len(self.states)
         self.states.append(state)
-        # print(self.states)
-        # print("The inp ids are",self.input_ids)
-        # print("-------------------------------------",self.tokenizer.decode(self.input_ids))
-        # exit()
         return new_index
 
     def add_state(self, token: int):
@@ -131,8 +127,10 @@ class DynSAM:
             self.transfer_cur_state(token)
 
     def lookup(self, token: int,step,counter):
+        # print("The dynamic look up is invoked")
         index, length,counter = \
             self.transfer_state(self.cur_index, self.cur_length, token,is_infer=True,step=step,counter=counter)
+        # print("The index and lenth returned by the dynamic look up is..",index,length)
         return index, length, counter
 
     def to_anc(self, index: int):

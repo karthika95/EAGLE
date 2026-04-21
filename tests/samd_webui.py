@@ -32,15 +32,15 @@ from samd.wordgroup_sam import WordGroupAwareSAM
 from samd.wordgroup.grouping import boundaries_for_token_ids
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model_path', type=str, default="/home/aravind-21661-t/GokulG/bharatgenexperiments/Models/Airavata")
-parser.add_argument('--sam_path', type=str, default="/home/aravind-21661-t/GokulG/EAGLE/downloads/sharded_sam/data_shraded")
+parser.add_argument('--model_path', type=str, default="Path to the main model")
+parser.add_argument('--sam_path', type=str, default="path to sam")
 parser.add_argument('--wordgroup_sam', action='store_true', help='Treat sam_path as a word-group-aware SAM pickle')
 parser.add_argument('--samd_n_predicts', type=int, default=10)
 parser.add_argument('--max_new_tokens', type=int, default=512)
 parser.add_argument('--max_cache_len', type=int, default=2048)
 parser.add_argument("--tree_method", type=str, default="eagle2")
-parser.add_argument("--tree_model_path", type=str, default="/home/aravind-21661-t/GokulG/bharatgenexperiments/Models/draft_model/Airavata_Draft")
-parser.add_argument('--len_threshold', type=int, default=5)
+parser.add_argument("--tree_model_path", type=str, default="path to tree model")
+parser.add_argument('--len_threshold', type=int, default=3)
 parser.add_argument('--len_bias', type=int, default=5)
 parser.add_argument('--disable_dyn', action='store_true', help='Disable dynamic SAM drafting')
 parser.add_argument('--disable_static', action='store_true', help='Disable static SAM drafting')
@@ -54,7 +54,6 @@ args.dtype = {
     'float32': torch.float32,
 }[args.dtype]
 
-# load the model and set to evaluation mode
 tokenizer = AutoTokenizer.from_pretrained(args.model_path)
 
 model = AutoModelForCausalLM.from_pretrained(
@@ -65,7 +64,6 @@ model = AutoModelForCausalLM.from_pretrained(
 model.eval()
 
 def load_wordgroup_sam(path: str):
-    """Load a word-group-aware SAM pickle and return it (or None if not found)."""
     if path is None:
         return None
     try:
@@ -114,7 +112,7 @@ class ShardedWordGroupSAM:
         self.loaded = None
         
         self.cache = collections.OrderedDict()
-        self.cache_size = 200  # ~1.2GB RAM, covers ~9% of shards for better stability
+        self.cache_size = 200
 
     def _load_shard(self, shard_id):
 
@@ -124,7 +122,6 @@ class ShardedWordGroupSAM:
             self.loaded_shard_id = shard_id
             return
 
-        print(f"Loading shard {shard_id}")
         obj = torch.load(
             self.shards[shard_id],
             map_location="cpu",
@@ -139,7 +136,6 @@ class ShardedWordGroupSAM:
         
         if len(self.cache) > self.cache_size:
             oldest_id, _ = self.cache.popitem(last=False)
-            print(f"Evicted shard {oldest_id} from cache")
             gc.collect() 
 
     def get_state(self, index):
@@ -158,7 +154,6 @@ class ShardedWordGroupSAM:
 
 
 class WordGroupAwareDraftModel(DraftModel):
-    """Draft model that is aware of word-group static SAM and reports seqtype."""
 
     def __init__(
         self,
@@ -228,7 +223,6 @@ class WordGroupAwareDraftModel(DraftModel):
             index_static, match_static, counter = self.sam_static.lookup(start_token, step, counter)
         else:
             index_static, match_static = -1, float('-inf')
-        match_static -= self.len_bias
 
         best_match = max(match_dyn, match_static)
         threshold_met = best_match >= self.len_threshold
@@ -236,73 +230,74 @@ class WordGroupAwareDraftModel(DraftModel):
         if threshold_met or self.disable_eagle:
             use_dynamic = (not self.disable_dyn) and (match_dyn >= match_static)
             if use_dynamic:
-                seq = self.sam_dyn.gen_draft(index_dyn, start_token)
+                seq, n_draft = self.sam_dyn.gen_draft(index_dyn, start_token)
                 seqtype = "dynamic"
             else:
-                seq = self.sam_static.gen_draft(index_static, start_token)
+                seq, n_draft = self.sam_static.gen_draft(index_static, start_token)
                 seqtype = "static"
-            return (CandidateType.sequence, seqtype, seq, {})
+            return (CandidateType.sequence, seqtype, seq, {}, n_draft)
 
         tree_tokens, buffers_kwargs = self.tree_model.gen_draft(start_token)
-        return (CandidateType.tree, "tree", tree_tokens, buffers_kwargs)
+        n_draft = len(tree_tokens) - 1
+        return (CandidateType.tree, "tree", tree_tokens, buffers_kwargs, n_draft)
+
+
+if args.disable_static:
+    sam = None
+elif args.wordgroup_sam:
+    sam = load_wordgroup_sam(args.sam_path)
+else:
+    sam = load_sam(args.sam_path) if args.sam_path is not None else None
+
+samd_config = SamdConfig(
+    n_predicts=args.samd_n_predicts,
+    tree_method=args.tree_method,
+    tree_model_path=args.tree_model_path,
+    len_threshold=args.len_threshold,
+    len_bias=args.len_bias,
+)
+
+if args.wordgroup_sam:
+    draft = WordGroupAwareDraftModel(
+        samd_config,
+        sam_static=sam,
+        lm=model,
+        dtype=args.dtype,
+        device=args.device,
+        tokenizer=tokenizer,
+        disable_dyn=args.disable_dyn,
+        disable_eagle=args.disable_eagle,
+        disable_static=args.disable_static,
+    )
+else:
+    draft = DraftModel(
+        samd_config,
+        sam_static=sam,
+        lm=model,
+        dtype=args.dtype,
+        device=args.device,
+    )
+
+samd_model = SamdModel(
+    samd_config,
+    model,
+    draft,
+    tokenizer.eos_token_id,
+    args.dtype,
+    args.device,
+    tokenizer=tokenizer,
+)
+samd_model.eval()
+
+gen_config = SamdGenerationConfig(
+    max_new_tokens=args.max_new_tokens,
+    max_cache_len=args.max_cache_len,
+)
+
 
 @torch.inference_mode()
 def samd_generate(args, inputs, model, tokenizer):
     assert inputs.input_ids.shape[-1] + args.max_new_tokens <= args.max_cache_len
-    
-    if args.disable_static:
-        sam = None
-    elif args.wordgroup_sam:
-        sharded = ShardedWordGroupSAM(args.sam_path)
-        sam = sharded.sam
-        sam.get_state = sharded.get_state
-    else:
-        sam = load_sam(args.sam_path) if args.sam_path is not None else None
-
-
-    samd_config = SamdConfig(
-        n_predicts=args.samd_n_predicts,
-        tree_method=args.tree_method,
-        tree_model_path=args.tree_model_path,
-        len_threshold=args.len_threshold,
-        len_bias=args.len_bias,
-    )
-    if args.wordgroup_sam:
-        draft = WordGroupAwareDraftModel(
-            samd_config,
-            sam_static=sam,
-            lm=model,
-            dtype=args.dtype,
-            device=args.device,
-            tokenizer=tokenizer,
-            disable_dyn=args.disable_dyn,
-            disable_eagle=args.disable_eagle,
-            disable_static=args.disable_static,
-        )
-    else:
-        draft = DraftModel(
-            samd_config, 
-            sam_static=sam,
-            lm=model,
-            dtype=args.dtype,
-            device=args.device
-        )
-        
-    samd_model = SamdModel(
-        samd_config, 
-        model, 
-        draft, 
-        tokenizer.eos_token_id, 
-        args.dtype,
-        args.device,
-        tokenizer=tokenizer,
-    )
-    samd_model.eval()
-    
-    gen_config = SamdGenerationConfig(
-        max_new_tokens=args.max_new_tokens,
-        max_cache_len=args.max_cache_len,
-    )
     gen = samd_model.stream_generate(**inputs, generation_config=gen_config)
     return gen
         
@@ -314,11 +309,13 @@ def user(current_text,chatbot,session_state):
     pure_history+=[[current_text,None]]
     session_state["pure_history"]=pure_history
     return "",chatbot+[[current_text,None]],session_state
+
 def clear(history,session):
     pure_history=[]
     session["pure_history"]=pure_history
     history=pure_history
     return history,session
+
 def regenerate(history,session_state):
     if history is None:
         history=[]
@@ -345,64 +342,91 @@ def bot(chatbot,session_state):
                  "static":"orange",
                  "dynamic":"red"
     }
-    all_ids=[]
-    previous_output=""
-    
+
     start_time = time.time()
     total_tokens = 0
-    
+    total_steps = 0
+    method_proposed = {"tree": 0, "static": 0, "dynamic": 0}
+    method_accepted = {"tree": 0, "static": 0, "dynamic": 0}
+
     for chunk in gen:
         token_ids = chunk["ids"]
         seqtype = chunk["seqtype"]
+        n_draft = chunk.get("n_draft", 0)
+        print("The ids are",chunk["ids"])
+        print("The sequence type is",chunk["seqtype"])
         color = colour_data.get(seqtype)
-        all_ids.extend(token_ids)
-        total_tokens += len(token_ids)
 
-        output_so_far = tokenizer.decode(all_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-        token_text = output_so_far[len(previous_output):]
-        previous_output = output_so_far
+        total_steps += 1
+        total_tokens += len(token_ids)
+        n_accepted = max(0, len(token_ids) - 1)
+        if seqtype in method_proposed:
+            method_proposed[seqtype] += n_draft
+            method_accepted[seqtype] += n_accepted
+
+        chunk_text = tokenizer.decode(token_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+
+        if not chunk_text:
+            elapsed_time = time.time() - start_time
+            tokens_per_sec = total_tokens / elapsed_time if elapsed_time > 0 else 0
+            speed_info = (
+                f"**Speed:** {tokens_per_sec:.2f} tokens/sec | "
+                f"**Tokens:** {total_tokens} | "
+                f"**Steps:** {total_steps}"
+            )
+            yield chatbot, session_state, speed_info
+            continue
+
+        raw_response += chunk_text
 
         if len(token_ids) == 1:
-            start_token = tokenizer.decode(token_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True)
-            start_token = start_token.replace("_", " ").strip()
-            token_text = re.sub(
-                re.escape(start_token),
-                f"<span style='color:white'>{start_token}</span>",
-                token_text,
-                count=1
-            )
+            token_text = f"<span style='color:white'>{chunk_text}</span>"
         else:
-            start_token = tokenizer.decode(token_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True)
-            start_token = start_token.replace("_", " ").strip()
-            replacement = (
-                f"<span style='color:white'>\\1</span>"
-                f"<span style='color:{color}'>\\2</span>"
-            )
-            token_text = re.sub(
-                rf"({re.escape(start_token)})(.*)",
-                replacement,
-                token_text,
-                count=1
-            )
+            start_token = tokenizer.decode([token_ids[0]], skip_special_tokens=True, clean_up_tokenization_spaces=True)
+            if start_token and chunk_text.startswith(start_token):
+                draft_text = chunk_text[len(start_token):]
+                token_text = f"<span style='color:white'>{start_token}</span>"
+                if draft_text:
+                    token_text += f"<span style='color:{color}'>{draft_text}</span>"
+            else:
+                token_text = f"<span style='color:{color}'>{chunk_text}</span>"
 
-        colored_token=token_text
-        raw_response+=token_text
-        coloured_response += colored_token
+        coloured_response += token_text
         chatbot[-1][1]=coloured_response
-        
+
         elapsed_time = time.time() - start_time
         tokens_per_sec = total_tokens / elapsed_time if elapsed_time > 0 else 0
-        speed_info = f"**Speed:** {tokens_per_sec:.2f} tokens/sec | **Total Tokens:** {total_tokens}"
-        
+        speed_info = (
+            f"**Speed:** {tokens_per_sec:.2f} tokens/sec | "
+            f"**Tokens:** {total_tokens} | "
+            f"**Steps:** {total_steps}"
+        )
+
         yield chatbot, session_state, speed_info
 
     pure_history[-1][1] = raw_response
     session_state["pure_history"] = pure_history
-    
+
     elapsed_time = time.time() - start_time
     tokens_per_sec = total_tokens / elapsed_time if elapsed_time > 0 else 0
-    speed_info = f"**Speed:** {tokens_per_sec:.2f} tokens/sec | **Total Tokens:** {total_tokens} | **Time:** {elapsed_time:.2f}s"
-    
+
+    method_parts = []
+    for m in ("static", "dynamic", "tree"):
+        proposed = method_proposed[m]
+        accepted = method_accepted[m]
+        if proposed > 0:
+            rate = accepted / proposed * 100
+            method_parts.append(f"**{m}:** {accepted}/{proposed} ({rate:.1f}%)")
+    acceptance_info = " | ".join(method_parts) if method_parts else "N/A"
+
+    speed_info = (
+        f"**Speed:** {tokens_per_sec:.2f} tokens/sec | "
+        f"**Tokens:** {total_tokens} | "
+        f"**Steps:** {total_steps} | "
+        f"**Time:** {elapsed_time:.2f}s\n\n"
+        f"**Acceptance rate** — {acceptance_info}"
+    )
+
     yield chatbot, session_state, speed_info
 
 
