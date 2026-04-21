@@ -75,6 +75,7 @@ def gen_candidates(
     device: torch.device,
     step
 ):
+    
     """
     Generate candidates based on provided logits and indices.
     
@@ -88,7 +89,7 @@ def gen_candidates(
         start_token = torch.argmax(sample_p, dim=-1).item()
     else:
         start_token = torch.multinomial(sample_p, 1).item()
-    candidate_type,seqtype, tokens, buffers_kwargs = draft.lookup(start_token,step)
+    candidate_type, seqtype, tokens, buffers_kwargs, n_draft = draft.lookup(start_token,step)
     
     
     tree_retrieve_indices = buffers_kwargs.get("tree_retrieve_indices", tree_retrieve_indices)
@@ -99,13 +100,15 @@ def gen_candidates(
         tokens_ext = torch.tensor(tokens + [0], dtype=torch.long, device=device)
         candidate_tokens = tokens_ext[tree_retrieve_indices]
         tokens = torch.tensor([tokens], dtype=torch.long, device=device)
-    return Candidates(
+        n_draft = candidate_tokens.shape[-1] - 1
+    candidates = Candidates(
         candidate_type,
         seqtype,
         tokens,
         candidate_tokens,
         buffers_kwargs,
     )
+    return candidates, n_draft
 
 
 @profile_decorator("eval_posterior")
@@ -129,13 +132,16 @@ def eval_posterior(
     - accept_length (int): Length of the accepted candidate sequence.
     """
     if config.greedy:
-        
+        # Greedy decoding based on temperature value
+        # Find the tokens that match the maximum logits for each position in the sequence
         posterior_mask = (
             candidates[:, 1:] == torch.argmax(logits[:, :-1], dim=-1)
         ).int()
         candidates_accept_length = (torch.cumprod(posterior_mask, dim=1)).sum(dim=1)
         accept_length = candidates_accept_length.max()
+        # Choose the best candidate
         if accept_length == 0:
+            # Default to the first candidate if none are accepted
             best_candidate = torch.tensor(0, dtype=torch.long, device=candidates.device)
         else:
             best_candidate = torch.argmax(candidates_accept_length).to(torch.long)

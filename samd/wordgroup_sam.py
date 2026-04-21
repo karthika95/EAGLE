@@ -57,7 +57,7 @@ class WordGroupAwareSAM(StaticSAM):
 
         if index == 0:
             # print(f"[STATIC SAM] No match found, returning empty draft")
-            return [start_token] + [0] * (self.n_predicts - 1)
+            return [start_token] + [0] * (self.n_predicts - 1), 0
 
         endpos = self.states(index).min_endpos
 
@@ -94,7 +94,7 @@ class WordGroupAwareSAM(StaticSAM):
         #     f"(first 5: {pred_ids[:5]})"
         # )
 
-        return pred_ids
+        return pred_ids, len(buffer_tokens)
 
     @staticmethod
     def build(

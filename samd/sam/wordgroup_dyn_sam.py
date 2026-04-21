@@ -37,10 +37,11 @@ class WordGroupAwareDynSAM(DynSAM):
 
 
         if index == 0:
-            return [start_token] + [0] * (self.n_predicts - 1)
+            return [start_token] + [0] * (self.n_predicts - 1), 0
 
         endpos = self.states[index].min_endpos
 
+    # Start after the match
         start_pos = endpos + 1
         pred_ids = [start_token]
 
@@ -68,4 +69,4 @@ class WordGroupAwareDynSAM(DynSAM):
             pred_ids.append(0)
 
 
-        return pred_ids
+        return pred_ids, len(buffer_tokens)

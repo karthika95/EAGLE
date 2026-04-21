@@ -133,7 +133,7 @@ class SamdModel(nn.Module):
     
     # @profile_decorator("SamdModel.decode")
     def decode(self, sample_p: torch.Tensor, length: int,step):
-        candidates = gen_candidates(
+        candidates, n_draft = gen_candidates(
             sample_p,
             self.base_tree_retrieve_indices,
             self.draft,
@@ -158,7 +158,6 @@ class SamdModel(nn.Module):
         )
         
         tree_logits = outputs.logits
-        # print("tree_logits.shape:", tree_logits.shape)
         if self.samd_config.use_last_hidden_states:
             tree_last_hidden_states = OptionalTensor(outputs.last_hidden_states)
         else:
@@ -188,31 +187,7 @@ class SamdModel(nn.Module):
             candidate_last_hidden_states,
         )
 
-        proposed_ids = candidates.candidate_tokens[best_candidate][:accept_length].tolist()
-        
-        if isinstance(new_tokens, torch.Tensor):
-            accepted_ids = new_tokens.tolist()
-        elif isinstance(new_tokens, list):
-            accepted_ids = list(new_tokens)
-        else:
-            try:
-                accepted_ids = list(new_tokens)
-            except Exception:
-                raise TypeError(f"Unexpected type for new_tokens: {type(new_tokens)}. "
-                                "Expected torch.Tensor or list-like.")
-
-        def _decode(ids):
-            if self.tokenizer is None:
-                return ids
-            nz = [i for i in ids if i != 0]
-            return self.tokenizer.decode(nz, skip_special_tokens=True) if nz else ""
-        proposed_txt = _decode(proposed_ids)
-        accepted_txt = _decode(accepted_ids)
-        verifier_only = len(accepted_ids) <= 1
-        flag = " (verifier only)" if verifier_only else ""
-        # print(f"[step {step}] method={candidates.seqtype} proposed='{proposed_txt}' accepted='{accepted_txt}'{flag}")
-
-        return sample_p, new_tokens, candidates.seqtype
+        return sample_p, new_tokens, candidates.seqtype, n_draft
 
     # @profile_decorator("SamdModel.update_state")
     def update_state(self,
@@ -285,7 +260,7 @@ class SamdModel(nn.Module):
         for step in range(generation_config.max_new_tokens):#Generate until max new tokens
             if input_length + decode_tokens + self.samd_config.max_predicts >= generation_config.max_cache_len:
                 break
-            sample_p, new_ids ,seqtype= self.decode(sample_p, input_length + decode_tokens,step)#sample_p is the prob distribution
+            sample_p, new_ids, seqtype, _n_draft = self.decode(sample_p, input_length + decode_tokens,step)#sample_p is the prob distribution
 
             eos_index = None
             if self.eos_token in new_ids:
@@ -328,11 +303,10 @@ class SamdModel(nn.Module):
         
         input_length = input_ids.shape[-1]
         decode_tokens = 0
-        streamed_len =0
         for step in range(generation_config.max_steps):
             if input_length + decode_tokens + self.samd_config.max_predicts >= generation_config.max_cache_len:
                 break
-            sample_p, new_ids,seqtype = self.decode(sample_p, input_length + decode_tokens,step)
+            sample_p, new_ids, seqtype, n_draft = self.decode(sample_p, input_length + decode_tokens,step)
             eos_index = None
             if self.eos_token in new_ids:
                 eos_index = new_ids.index(self.eos_token)
@@ -343,14 +317,8 @@ class SamdModel(nn.Module):
             input_ids_list.extend(new_ids)
             decode_tokens += len(new_ids)
 
-            full_ids=input_ids_list[input_length:]
-
-            # Yield only new characters
-            new_text = full_ids[streamed_len:]
-            
-            if new_text:
-                yield {"ids": new_text,"seqtype":seqtype}
-                streamed_len += len(new_text)
+            if new_ids:
+                yield {"ids": new_ids, "seqtype": seqtype, "n_draft": n_draft}
 
             if eos_index is not None:
                 break
