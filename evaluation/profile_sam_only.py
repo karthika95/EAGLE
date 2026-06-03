@@ -45,7 +45,7 @@ def sam_only_forward(
     output_ids = outputs.output_ids
     new_token = outputs.decode_tokens
     step = outputs.decode_steps
-    accept_length_list = outputs.accepet_length_per_step
+    accept_length_list = outputs.accept_length_per_step
     return output_ids, new_token, step, accept_length_list
 
 

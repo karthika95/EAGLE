@@ -20,7 +20,7 @@ from .draft import DraftModel
 from .model_patch import patch_dict, attn_patch_dict
 from profile_utils import profile_decorator, profile_accept_length
 
-Outputs = namedtuple('Outputs', ['output_ids', 'decode_tokens', 'decode_steps', 'accepet_length_per_step'])
+Outputs = namedtuple('Outputs', ['output_ids', 'decode_tokens', 'decode_steps', 'accept_length_per_step'])
 
 class SamdModel(nn.Module):
     
@@ -212,7 +212,7 @@ class SamdModel(nn.Module):
         input_length = input_ids.shape[-1]
         decode_tokens = 0
         decode_steps = 0
-        accepet_length_per_step = []
+        accept_length_per_step = []
         for step in range(generation_config.max_new_tokens):
             if input_length + decode_tokens + self.samd_config.max_predicts >= generation_config.max_cache_len:
                 break
@@ -227,14 +227,14 @@ class SamdModel(nn.Module):
             input_ids_list.extend(new_ids)
             decode_steps += 1
             decode_tokens += len(new_ids)
-            accepet_length_per_step.append(len(new_ids))
+            accept_length_per_step.append(len(new_ids))
             profile_accept_length("lookup", len(new_ids))
             if eos_index is not None:
                 break
             if decode_tokens >= generation_config.max_new_tokens:
                 break
         input_ids_list = [input_ids_list[:input_length + generation_config.max_new_tokens]]
-        return Outputs(input_ids_list, decode_tokens, decode_steps, accepet_length_per_step)
+        return Outputs(input_ids_list, decode_tokens, decode_steps, accept_length_per_step)
 
     @torch.inference_mode()
     def stream_generate(self,

@@ -657,13 +657,34 @@ class Eagle2Model(nn.Module):
         self.tree_mask = None
 
     def load_weight(self, path: str):
+        import os
+        import time
+        import torch
+        from safetensors.torch import load_file
+
         print("load eagle2 model...")
         start = time.perf_counter()
-        path = os.path.join(path, "pytorch_model.bin")
-        state_dict = torch.load(path)
-        self.load_state_dict(state_dict)
+
+        bin_path = os.path.join(path, "pytorch_model.bin")
+        safe_path = os.path.join(path, "model.safetensors")
+
+        if os.path.exists(bin_path):
+            print(f"Loading from {bin_path}")
+            state_dict = torch.load(bin_path, map_location="cpu")
+
+        elif os.path.exists(safe_path):
+            print(f"Loading from {safe_path}")
+            state_dict = load_file(safe_path)
+
+        else:
+            raise FileNotFoundError(
+                f"No model file found in {path} (expected pytorch_model.bin or model.safetensors)"
+            )
+
+        self.load_state_dict(state_dict, strict=False)
+
         end = time.perf_counter()
-        print("loading ended in {} seconds.".format(end - start))
+        print(f"loading ended in {end - start:.2f} seconds.")
 
     def _prepare_decoder_attention_mask(
         self, attention_mask, input_shape, inputs_embeds, past_key_values_length

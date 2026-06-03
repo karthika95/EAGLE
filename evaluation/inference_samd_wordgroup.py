@@ -21,7 +21,6 @@ from samd import SamdConfig, SamdModel, SamdGenerationConfig, DraftModel
 from samd.draft import CandidateType
 from samd.wordgroup_sam import WordGroupAwareSAM
 from samd.sam.wordgroup_dyn_sam import WordGroupAwareDynSAM
-from samd.sam.torch_static_sam import TorchStaticSAM
 from samd.wordgroup.grouping import boundaries_for_token_ids
 
 
@@ -94,6 +93,7 @@ class WordGroupAwareDraftModel(DraftModel):
         # Try static SAM
         if self.sam_static is not None:
             index_static, match_static, counter = self.sam_static.lookup(start_token, step, counter)
+            match_static -= self.len_bias
         else:
             index_static, match_static = -1, float('-inf')
         
@@ -111,11 +111,13 @@ class WordGroupAwareDraftModel(DraftModel):
             else:
                 seq = self.sam_static.gen_draft(index_static, start_token)
                 seqtype = "static"
-            return (CandidateType.sequence, seqtype, seq, {})
+            n_draft = (max(0, len(seq) - 1) if isinstance(seq, (list, tuple)) else 0)
+            return (CandidateType.sequence, seqtype, seq, {}, n_draft)
         
         # Fall back to tree/EAGLE drafting
         tree_tokens, buffers_kwargs = self.tree_model.gen_draft(start_token)
-        return (CandidateType.tree, "tree", tree_tokens, buffers_kwargs)
+        n_draft = max(0, len(tree_tokens) - 1)
+        return (CandidateType.tree, "tree", tree_tokens, buffers_kwargs, n_draft)
 
 
 def load_wordgroup_sam(path: str):
@@ -162,7 +164,7 @@ def samd_forward(
     output_ids = outputs.output_ids
     new_token = outputs.decode_tokens
     step = outputs.decode_steps
-    accept_length_list = outputs.accepet_length_per_step
+    accept_length_list = outputs.accept_length_per_step
     return output_ids, new_token, step, accept_length_list
 
 

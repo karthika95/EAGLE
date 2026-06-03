@@ -121,26 +121,26 @@ def apply_rule5_once(tokens):
 
         # EE ending + auxiliary
         if w.endswith(EE_ENDING) and i + 1 < n and tokens[i + 1] in AUX_AFTER_EE:
-            out.append(w + "_" + tokens[i + 1])
+            out.append(w + "##" + tokens[i + 1])
             i += 2
             continue
 
         # A ending + auxiliary
         if w.endswith(A_ENDING) and i + 1 < n and tokens[i + 1] in AUX_AFTER_A:
-            out.append(w + "_" + tokens[i + 1])
+            out.append(w + "##" + tokens[i + 1])
             i += 2
             continue
 
         # चाहिए
         if i + 1 < n and tokens[i + 1] == "चाहिए":
             if w.endswith(A_ENDING) or w.endswith(EE_ENDING):
-                out.append(w + "_चाहिए")
+                out.append(w + "##चाहिए")
                 i += 2
                 continue
 
         # लगता/लगती है
         if w.endswith(E_ENDING) and i + 2 < n and tokens[i + 1] in {"लगता", "लगती"} and tokens[i + 2] == "है":
-            out.append(w + "_" + tokens[i + 1] + "_" + tokens[i + 2])
+            out.append(w + "##" + tokens[i + 1] + "##" + tokens[i + 2])
             i += 3
             continue
 
@@ -170,7 +170,7 @@ def apply_phrase_grouping(tokens):
         for phrase in all_phrases:
             L = len(phrase)
             if i + L <= n and tokens[i:i + L] == phrase:
-                out.append("_".join(phrase))
+                out.append("##".join(phrase))
                 i += L
                 matched = True
                 break
@@ -189,7 +189,7 @@ def apply_right_attachment(tokens):
     """
     Rule 4
     - "नहीं" and numbers should be grouped with the word to their right.
-    Examples: "नहीं करना" -> "नहीं_करना", "10 ग्राम" -> "10_ग्राम"
+    Examples: "नहीं करना" -> "नहीं##करना", "10 ग्राम" -> "10##ग्राम"
     """
     out = []
     i = 0
@@ -199,7 +199,7 @@ def apply_right_attachment(tokens):
         w = tokens[i]
         # If "नहीं" or numeric token and there is a right neighbor
         if (w == "नहीं" or is_number_token(w)) and i + 1 < n:
-            out.append(w + "_" + tokens[i + 1])
+            out.append(w + "##" + tokens[i + 1])
             i += 2
         else:
             out.append(w)
@@ -212,13 +212,13 @@ def apply_left_attachment(tokens):
     """
     Rule 2 + left-attachment part of Rule 3
     - Tokens in ATTACH_TO_LEFT attach to the previous token.
-    - Tokens in ATTACH_MULTI_TO_LEFT (e.g., "के_लिए") also attach to the previous token.
+    - Tokens in ATTACH_MULTI_TO_LEFT (e.g., "के##लिए") also attach to the previous token.
     """
     out = []
     for tok in tokens:
         if tok in ATTACH_TO_LEFT or tok in ATTACH_MULTI_TO_LEFT:
             if out:
-                out[-1] = out[-1] + "_" + tok
+                out[-1] = out[-1] + "##" + tok
             else:
                 # No left word; just keep as is
                 out.append(tok)
@@ -228,9 +228,8 @@ def apply_left_attachment(tokens):
 
 
 
-def group_sentence(sentence):
-    #Apply all grouping rules to one sentence (string).
-    
+def group_sentence(sentence: str) -> str:
+    """Apply all grouping rules to one sentence (string); returns space-joined grouped segments."""
     tokens = sentence.strip().split()
     if not tokens:
         return ""
@@ -242,13 +241,30 @@ def group_sentence(sentence):
     return " ".join(tokens)
 
 
+def group_sentence_to_word_groups(words: List[str]) -> List[Tuple[str, bool]]:
+    """Run the grouping pipeline on whitespace-split words; expand ##-merged segments for offset alignment."""
+    grouped_words = apply_phrase_grouping(words)
+    grouped_words = apply_right_attachment(grouped_words)
+    grouped_words = apply_left_attachment(grouped_words)
+
+    groups: List[Tuple[str, bool]] = []
+    for seg in grouped_words:
+        if "##" in seg:
+            parts = seg.split("##")
+            for j, w in enumerate(parts):
+                groups.append((w, j == len(parts) - 1))
+        else:
+            groups.append((seg, True))
+    return groups
+
+
 def word_groups_to_token_boundaries(tokenizer, cleaned_text: str, tokens: List[int]):
     boundaries = [False] * len(tokens)
     words = cleaned_text.strip().split()
-    word_groups = group_sentence(words)
+    word_groups = group_sentence_to_word_groups(words)
     if not word_groups or not tokens:
         return boundaries
-    
+
     try:
         full_encoding = tokenizer(cleaned_text, return_offsets_mapping=True, add_special_tokens=True)
         

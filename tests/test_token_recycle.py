@@ -76,7 +76,7 @@ def token_recycle_generate(args, inputs, model, tokenizer):
     print("token_recycle_model response:\n{}".format(repr(response)))
     print("decode_steps: {}".format(outputs.decode_steps))
     print("decode_tokens: {}".format(outputs.decode_tokens))
-    print("accepect_length_per_step: {}".format(outputs.accepet_length_per_step))
+    print("accept_length_per_step: {}".format(outputs.accept_length_per_step))
 
 def main():
     args = parse_args()

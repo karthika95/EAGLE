@@ -59,7 +59,7 @@ class WordGroupAwareSAM(StaticSAM):
             # print(f"[STATIC SAM] No match found, returning empty draft")
             return [start_token] + [0] * (self.n_predicts - 1), 0
 
-        endpos = self.states(index).min_endpos
+        endpos = self.states[index].min_endpos
 
         # Start after the match
         start_pos = endpos + 1

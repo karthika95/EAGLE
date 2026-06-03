@@ -426,12 +426,12 @@ def samd_generate_wordgroup(args, inputs, model, tokenizer, sam):
     print(f"Decode tokens: {outputs.decode_tokens}")
     tokens_per_second = outputs.decode_tokens / generation_time if generation_time > 0 else 0.0
     avg_accept_length = (
-        sum(outputs.accepet_length_per_step) / len(outputs.accepet_length_per_step)
-        if outputs.accepet_length_per_step else 0.0
+        sum(outputs.accept_length_per_step) / len(outputs.accept_length_per_step)
+        if outputs.accept_length_per_step else 0.0
     )
     print(f"Tokens per second: {tokens_per_second:.2f}")
     print(f"Average accept length per step: {avg_accept_length:.2f}")
-    print(f"\nAccept lengths per step: {outputs.accepet_length_per_step}")
+    print(f"\nAccept lengths per step: {outputs.accept_length_per_step}")
     
     print("\n" + "="*80)
     print("ACCEPTANCE STATISTICS")
