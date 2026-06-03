@@ -17,6 +17,7 @@ class CandidateType(str, Enum):
     tree = "tree"
 
 Candidates = namedtuple('Candidates', ['type','seqtype', 'tokens', 'candidate_tokens', 'buffers_kwargs'])
+DraftInfo = namedtuple('DraftInfo', ['candidate_type', 'seqtype', 'tokens', 'buffers_kwargs', 'n_draft', 'draft_stats'])
 
 TOPK = 8
 
@@ -59,14 +60,86 @@ class DraftModel(torch.nn.Module):
         if max(match_dyn, match_static) >= self.len_threshold:
             if match_dyn >= match_static:
                 seq = self.sam_dyn.gen_draft(index_dyn, start_token)
-                seqtype="dynamic"
+                seqtype = "dynamic"
             else:
                 seq = self.sam_static.gen_draft(index_static, start_token)
-                seqtype="static"
-            return (CandidateType.sequence,seqtype, seq, {})
-        else:
-            seqtype="tree"
-            return (CandidateType.tree,seqtype) + self.tree_model.gen_draft(start_token)
+                seqtype = "static"
+
+            # Normalize sequence return values: some SAM implementations
+            # return (pred_ids, meta) while others return pred_ids directly.
+            seq_tokens = seq[0] if isinstance(seq, tuple) and len(seq) >= 1 else seq
+
+            if isinstance(seq_tokens, (list, tuple)):
+                n_draft = max(0, len(seq_tokens) - 1)
+            elif isinstance(seq_tokens, torch.Tensor):
+                n_draft = max(0, seq_tokens.shape[-1] - 1)
+            else:
+                # Fallback: assume single-token draft
+                n_draft = 1
+
+            return (CandidateType.sequence, seqtype, seq_tokens, {}, n_draft)
+        seqtype = "tree"
+        tree_tokens, buffers_kwargs = self.tree_model.gen_draft(start_token)
+        n_draft = max(0, len(tree_tokens) - 1)
+        return (CandidateType.tree, seqtype, tree_tokens, buffers_kwargs, n_draft)
+    
+    def lookup_with_stats(self, start_token: int, step: int) -> DraftInfo:
+        """Enhanced lookup that returns draft statistics"""
+        counter = 0
+        index_dyn, match_dyn, counter = self.sam_dyn.lookup(start_token, step, counter)
+        index_static, match_static, counter = self.sam_static.lookup(start_token, step, counter)
+        
+        match_static_adj = match_static - self.len_bias
+        draft_stats = {
+            "static_match_length": match_static,
+            "dynamic_match_length": match_dyn,
+            "static_match_length_adjusted": match_static_adj,
+        }
+        
+        # Decision logic: which method to use?
+        if max(match_dyn, match_static_adj) >= self.len_threshold:
+            if match_dyn >= match_static_adj:
+                seq = self.sam_dyn.gen_draft(index_dyn, start_token)
+                seqtype = "dynamic"
+                draft_stats["selected_method"] = "dynamic"
+            else:
+                seq = self.sam_static.gen_draft(index_static, start_token)
+                seqtype = "static"
+                draft_stats["selected_method"] = "static"
+
+            seq_tokens = seq[0] if isinstance(seq, tuple) and len(seq) >= 1 else seq
+
+            if isinstance(seq_tokens, (list, tuple)):
+                n_draft = max(0, len(seq_tokens) - 1)
+            elif isinstance(seq_tokens, torch.Tensor):
+                n_draft = max(0, seq_tokens.shape[-1] - 1)
+            else:
+                n_draft = 1
+
+            draft_stats["drafted_count"] = n_draft
+            return DraftInfo(
+                candidate_type=CandidateType.sequence,
+                seqtype=seqtype,
+                tokens=seq_tokens,
+                buffers_kwargs={},
+                n_draft=n_draft,
+                draft_stats=draft_stats
+            )
+        
+        # Fall back to tree
+        seqtype = "tree"
+        tree_tokens, buffers_kwargs = self.tree_model.gen_draft(start_token)
+        n_draft = max(0, len(tree_tokens) - 1)
+        draft_stats["selected_method"] = "tree"
+        draft_stats["drafted_count"] = n_draft
+        return DraftInfo(
+            candidate_type=CandidateType.tree,
+            seqtype=seqtype,
+            tokens=tree_tokens,
+            buffers_kwargs=buffers_kwargs,
+            n_draft=n_draft,
+            draft_stats=draft_stats
+        )
     
     def update(self,
         tokens: Optional[torch.Tensor] = None,

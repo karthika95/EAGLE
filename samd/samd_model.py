@@ -20,8 +20,10 @@ from .cache import SamdCache, SamdStaticCache
 from .draft import DraftModel
 from .model_patch import patch_dict, attn_patch_dict
 from profile_utils import profile_decorator, profile_accept_length
+from .draft_statistics import SequenceStatistics, StepStatistics
 
-Outputs = namedtuple('Outputs', ['output_ids', 'decode_tokens', 'decode_steps', 'accepet_length_per_step'])
+Outputs = namedtuple('Outputs', ['output_ids', 'decode_tokens', 'decode_steps', 'accept_length_per_step'])
+OutputsWithStats = namedtuple('OutputsWithStats', ['output_ids', 'decode_tokens', 'decode_steps', 'accept_length_per_step', 'sequence_stats'])
 
 class SamdModel(nn.Module):
     
@@ -324,3 +326,100 @@ class SamdModel(nn.Module):
                 break
             if decode_tokens >= generation_config.max_new_tokens:
                 break
+    
+    @torch.inference_mode()
+    def generate_with_stats(self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor = None,
+        generation_config: SamdGenerationConfig = None,
+        sequence_id: int = 0,
+    ) -> OutputsWithStats:
+        """Generate with detailed draft token statistics tracking"""
+        
+        if generation_config is None:
+            generation_config = SamdGenerationConfig()
+        self.gen_config = generation_config
+        assert input_ids.shape[0] == 1, "Only support batch_size == 1"  # [1, N]
+        
+        self.set_cache(generation_config)
+        self.draft.reset()
+        
+        input_ids_list = input_ids.squeeze(0).tolist()
+        sample_p = self.prefill(input_ids, attention_mask)
+        
+        input_length = input_ids.shape[-1]
+        decode_tokens = 0
+        decode_steps = 0
+        accept_length_per_step = []
+        
+        # Initialize sequence statistics
+        seq_stats = SequenceStatistics(sequence_id=sequence_id, total_steps=0)
+        
+        for step in range(generation_config.max_new_tokens):
+            if input_length + decode_tokens + self.samd_config.max_predicts >= generation_config.max_cache_len:
+                break
+            
+            sample_p, new_ids, seqtype, n_draft = self.decode(
+                sample_p,
+                input_length + decode_tokens,
+                step,
+            )
+            draft_stats = {"selected_method": seqtype, "drafted_count": n_draft}
+            
+            eos_index = None
+            if self.eos_token in new_ids:
+                eos_index = new_ids.index(self.eos_token)
+                new_ids = new_ids[:eos_index + 1]
+            elif self.stop_token is not None and self.stop_token in new_ids:
+                eos_index = new_ids.index(self.stop_token)
+                new_ids = new_ids[:eos_index + 1]
+            
+            input_ids_list.extend(new_ids)
+            decode_steps += 1
+            decode_tokens += len(new_ids)
+            accept_length_per_step.append(len(new_ids))
+
+            # Accepted draft tokens exclude the leading sampled token.
+            accepted_draft_tokens = max(0, len(new_ids) - 1)
+            if n_draft is not None:
+                accepted_draft_tokens = min(accepted_draft_tokens, max(0, int(n_draft)))
+            
+            # Update sequence statistics
+            step_stat = StepStatistics(
+                step=step,
+                draft_method=seqtype if 'selected_method' not in draft_stats else draft_stats['selected_method'],
+                draft_tokens_count=n_draft,
+                accepted_tokens_count=accepted_draft_tokens,
+            )
+            step_stat.compute_metrics()
+            seq_stats.step_stats.append(step_stat)
+            
+            # Aggregate per-method stats
+            if seqtype == "static":
+                seq_stats.static_draft_count += n_draft
+                seq_stats.static_accepted_count += accepted_draft_tokens
+                seq_stats.static_steps += 1
+            elif seqtype == "dynamic":
+                seq_stats.dynamic_draft_count += n_draft
+                seq_stats.dynamic_accepted_count += accepted_draft_tokens
+                seq_stats.dynamic_steps += 1
+            elif seqtype == "tree":
+                seq_stats.tree_draft_count += n_draft
+                seq_stats.tree_accepted_count += accepted_draft_tokens
+                seq_stats.tree_steps += 1
+            
+            if eos_index is not None:
+                break
+            if decode_tokens >= generation_config.max_new_tokens:
+                break
+        
+        input_ids_list = [input_ids_list[:input_length + generation_config.max_new_tokens]]
+        
+        # Finalize sequence stats
+        seq_stats.total_steps = decode_steps
+        seq_stats.total_draft_tokens = sum(s.draft_tokens_count for s in seq_stats.step_stats)
+        seq_stats.total_accepted_tokens = sum(s.accepted_tokens_count for s in seq_stats.step_stats)
+        seq_stats.total_output_tokens = decode_tokens
+        seq_stats.compute_metrics()
+        
+        return OutputsWithStats(input_ids_list, decode_tokens, decode_steps, accept_length_per_step, seq_stats)

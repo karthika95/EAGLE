@@ -90,16 +90,33 @@ def gen_candidates(
     else:
         start_token = torch.multinomial(sample_p, 1).item()
     candidate_type, seqtype, tokens, buffers_kwargs, n_draft = draft.lookup(start_token,step)
-    
-    
+
     tree_retrieve_indices = buffers_kwargs.get("tree_retrieve_indices", tree_retrieve_indices)
+
+    # Normalize tokens to a Python list of ints when possible. Some SAM
+    # implementations may return (tokens, extra) tuples or torch.Tensors.
+    if isinstance(tokens, tuple) and len(tokens) >= 1:
+        # e.g., (pred_ids, matched_len)
+        tokens = tokens[0]
+
+    if isinstance(tokens, torch.Tensor):
+        try:
+            tokens = tokens.tolist()
+        except Exception:
+            tokens = [int(tokens.item())]
+
+    if isinstance(tokens, int):
+        tokens = [tokens]
+
     if candidate_type == CandidateType.sequence:
-        tokens = torch.tensor([tokens], dtype=torch.long, device=device)
-        candidate_tokens = tokens
+        candidate_tokens = torch.tensor([tokens], dtype=torch.long, device=device)
+        tokens = candidate_tokens
     else:
-        tokens_ext = torch.tensor(tokens + [0], dtype=torch.long, device=device)
+        # tree case: build extended tensor and index
+        tokens_list = list(tokens)
+        tokens_ext = torch.tensor(tokens_list + [0], dtype=torch.long, device=device)
         candidate_tokens = tokens_ext[tree_retrieve_indices]
-        tokens = torch.tensor([tokens], dtype=torch.long, device=device)
+        tokens = torch.tensor([tokens_list], dtype=torch.long, device=device)
         n_draft = candidate_tokens.shape[-1] - 1
     candidates = Candidates(
         candidate_type,
