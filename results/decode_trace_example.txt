@@ -1,0 +1,500 @@
+Loading ai4bharat/Airavata …
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights:   1%|          | 2/291 [00:00<00:19, 14.55it/s]Loading weights:   4%|▍         | 11/291 [00:00<00:06, 43.10it/s]Loading weights:   8%|▊         | 23/291 [00:00<00:04, 60.64it/s]Loading weights:  14%|█▎        | 40/291 [00:00<00:02, 93.35it/s]Loading weights:  18%|█▊        | 53/291 [00:00<00:02, 102.60it/s]Loading weights:  23%|██▎       | 67/291 [00:00<00:02, 109.01it/s]Loading weights:  27%|██▋       | 79/291 [00:00<00:02, 104.02it/s]Loading weights:  31%|███▏      | 91/291 [00:00<00:01, 106.72it/s]Loading weights:  35%|███▌      | 103/291 [00:01<00:01, 106.70it/s]Loading weights:  39%|███▉      | 114/291 [00:01<00:01, 101.85it/s]Loading weights:  43%|████▎     | 125/291 [00:01<00:01, 101.93it/s]Loading weights:  48%|████▊     | 139/291 [00:01<00:01, 107.42it/s]Loading weights:  52%|█████▏    | 150/291 [00:03<00:07, 17.70it/s] Loading weights:  54%|█████▍    | 158/291 [00:05<00:11, 11.22it/s]Loading weights:  56%|█████▋    | 164/291 [00:05<00:10, 11.63it/s]Loading weights:  58%|█████▊    | 169/291 [00:06<00:13,  8.86it/s]Loading weights:  59%|█████▉    | 173/291 [00:07<00:14,  7.91it/s]Loading weights:  60%|██████    | 176/291 [00:07<00:16,  7.18it/s]Loading weights:  61%|██████    | 178/291 [00:08<00:17,  6.57it/s]Loading weights:  62%|██████▏   | 180/291 [00:08<00:17,  6.45it/s]Loading weights:  63%|██████▎   | 182/291 [00:09<00:17,  6.08it/s]Loading weights:  63%|██████▎   | 184/291 [00:09<00:19,  5.50it/s]Loading weights:  64%|██████▎   | 185/291 [00:10<00:23,  4.51it/s]Loading weights:  64%|██████▍   | 186/291 [00:10<00:28,  3.65it/s]Loading weights:  65%|██████▍   | 188/291 [00:10<00:22,  4.60it/s]Loading weights:  65%|██████▍   | 189/291 [00:11<00:21,  4.84it/s]Loading weights:  65%|██████▌   | 190/291 [00:11<00:20,  4.94it/s]Loading weights:  66%|██████▌   | 191/291 [00:11<00:19,  5.09it/s]Loading weights:  66%|██████▋   | 193/291 [00:11<00:21,  4.61it/s]Loading weights:  67%|██████▋   | 194/291 [00:12<00:27,  3.55it/s]Loading weights:  67%|██████▋   | 195/291 [00:12<00:32,  3.00it/s]Loading weights:  68%|██████▊   | 197/291 [00:13<00:22,  4.23it/s]Loading weights:  68%|██████▊   | 198/291 [00:13<00:20,  4.49it/s]Loading weights:  68%|██████▊   | 199/291 [00:13<00:19,  4.75it/s]Loading weights:  69%|██████▊   | 200/291 [00:13<00:18,  4.86it/s]Loading weights:  69%|██████▉   | 202/291 [00:14<00:19,  4.58it/s]Loading weights:  70%|██████▉   | 203/291 [00:14<00:25,  3.47it/s]Loading weights:  70%|███████   | 204/291 [00:15<00:29,  2.97it/s]Loading weights:  71%|███████   | 206/291 [00:15<00:20,  4.20it/s]Loading weights:  71%|███████   | 207/291 [00:15<00:19,  4.34it/s]Loading weights:  71%|███████▏  | 208/291 [00:15<00:18,  4.43it/s]Loading weights:  73%|███████▎  | 211/291 [00:16<00:14,  5.40it/s]Loading weights:  73%|███████▎  | 212/291 [00:16<00:19,  4.09it/s]Loading weights:  73%|███████▎  | 213/291 [00:17<00:23,  3.39it/s]Loading weights:  74%|███████▍  | 215/291 [00:17<00:16,  4.55it/s]Loading weights:  74%|███████▍  | 216/291 [00:17<00:15,  4.70it/s]Loading weights:  75%|███████▍  | 217/291 [00:17<00:16,  4.61it/s]Loading weights:  75%|███████▍  | 218/291 [00:18<00:16,  4.54it/s]Loading weights:  76%|███████▌  | 220/291 [00:18<00:10,  6.55it/s]Loading weights:  76%|███████▌  | 221/291 [00:18<00:17,  4.01it/s]Loading weights:  77%|███████▋  | 224/291 [00:18<00:11,  6.09it/s]Loading weights:  77%|███████▋  | 225/291 [00:19<00:10,  6.15it/s]Loading weights:  78%|███████▊  | 227/291 [00:19<00:08,  7.23it/s]Loading weights:  79%|███████▊  | 229/291 [00:19<00:10,  5.96it/s]Loading weights:  79%|███████▉  | 230/291 [00:20<00:13,  4.48it/s]Loading weights:  79%|███████▉  | 231/291 [00:20<00:16,  3.56it/s]Loading weights:  80%|████████  | 233/291 [00:20<00:12,  4.77it/s]Loading weights:  80%|████████  | 234/291 [00:21<00:11,  4.78it/s]Loading weights:  81%|████████  | 235/291 [00:21<00:11,  4.91it/s]Loading weights:  81%|████████  | 236/291 [00:21<00:10,  5.04it/s]Loading weights:  82%|████████▏ | 238/291 [00:21<00:10,  4.82it/s]Loading weights:  82%|████████▏ | 239/291 [00:22<00:13,  3.77it/s]Loading weights:  82%|████████▏ | 240/291 [00:22<00:15,  3.20it/s]Loading weights:  83%|████████▎ | 242/291 [00:22<00:10,  4.58it/s]Loading weights:  84%|████████▎ | 243/291 [00:23<00:09,  4.92it/s]Loading weights:  84%|████████▍ | 244/291 [00:23<00:09,  5.15it/s]Loading weights:  84%|████████▍ | 245/291 [00:23<00:08,  5.18it/s]Loading weights:  85%|████████▍ | 247/291 [00:23<00:09,  4.86it/s]Loading weights:  85%|████████▌ | 248/291 [00:24<00:11,  3.76it/s]Loading weights:  86%|████████▌ | 249/291 [00:24<00:13,  3.11it/s]Loading weights:  86%|████████▋ | 251/291 [00:25<00:09,  4.41it/s]Loading weights:  87%|████████▋ | 252/291 [00:25<00:08,  4.71it/s]Loading weights:  87%|████████▋ | 253/291 [00:25<00:07,  4.78it/s]Loading weights:  87%|████████▋ | 254/291 [00:25<00:07,  4.98it/s]Loading weights:  88%|████████▊ | 256/291 [00:26<00:07,  4.63it/s]Loading weights:  88%|████████▊ | 257/291 [00:26<00:09,  3.61it/s]Loading weights:  89%|████████▊ | 258/291 [00:27<00:10,  3.06it/s]Loading weights:  89%|████████▉ | 260/291 [00:27<00:06,  4.43it/s]Loading weights:  90%|████████▉ | 261/291 [00:27<00:06,  4.70it/s]Loading weights:  90%|█████████ | 262/291 [00:28<00:10,  2.74it/s]Loading weights:  91%|█████████▏| 266/291 [00:28<00:05,  4.20it/s]Loading weights:  92%|█████████▏| 267/291 [00:28<00:05,  4.39it/s]Loading weights:  93%|█████████▎| 270/291 [00:29<00:03,  6.38it/s]Loading weights:  93%|█████████▎| 271/291 [00:29<00:03,  6.24it/s]Loading weights:  93%|█████████▎| 272/291 [00:29<00:03,  6.08it/s]Loading weights:  94%|█████████▍| 274/291 [00:30<00:03,  5.07it/s]Loading weights:  95%|█████████▍| 275/291 [00:30<00:04,  3.97it/s]Loading weights:  95%|█████████▍| 276/291 [00:30<00:04,  3.41it/s]Loading weights:  96%|█████████▌| 278/291 [00:31<00:02,  4.77it/s]Loading weights:  96%|█████████▌| 279/291 [00:31<00:02,  5.04it/s]Loading weights:  96%|█████████▌| 280/291 [00:31<00:02,  5.21it/s]Loading weights:  97%|█████████▋| 281/291 [00:31<00:01,  5.46it/s]Loading weights:  97%|█████████▋| 283/291 [00:32<00:01,  4.98it/s]Loading weights:  98%|█████████▊| 284/291 [00:32<00:01,  3.78it/s]Loading weights:  98%|█████████▊| 285/291 [00:32<00:01,  3.22it/s]Loading weights:  99%|█████████▊| 287/291 [00:33<00:00,  4.58it/s]Loading weights:  99%|█████████▉| 288/291 [00:33<00:00,  4.84it/s]Loading weights:  99%|█████████▉| 289/291 [00:33<00:00,  5.04it/s]Loading weights: 100%|█████████▉| 290/291 [00:33<00:00,  5.18it/s]Loading weights: 100%|██████████| 291/291 [00:33<00:00,  8.65it/s]
+Loaded ai4bharat/Airavata
+[transformers] The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Both `max_new_tokens` (=120) and `max_length`(=4096) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=120) and `max_length`(=4096) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+
+══════════════════════════════════════════════════════════════════════════════
+Example 1 — Verb-Auxiliary Chain (MUST_AUX rule)
+──────────────────────────────────────────────────────────────────────────────
+Why this prompt: Past-tense narrative → ends-in-ā/ī verb stems trigger MUST_AUX obligation.
+
+PROMPT : महात्मा गांधी के जीवन और स्वतंत्रता संग्राम में उनके योगदान के बारे में बताइए।
+MODE   : constrained
+MODEL  : ai4bharat/Airavata
+
+─── Baseline (unconstrained) response ───────────────────────────────────
+  महात्मा गांधी के जीवन और स्वतंत्रता संग्राम में उनके योगदान के बारे में
+  जानकारी प्रदान करने के लिए धन्यवाद। गांधी एक भारतीय स्वतंत्रता सेनानी और
+  नेता थे जिन्होंने भारत के स्वतंत्रता संग्राम में महत्वपूर्ण भूमिका निभाई। वे
+  एक सामाजिक सुधारक भी थे जिन्होंने जाति व्यवस्था और आर्थिक असमानता को समाप्त
+  करने के लिए अथक प्रयास किया। गांधी ने अहिंसक प्रतिरोध और सविनय अवज्ञा के
+  सिद्धांतों को बढ़ावा दिया, और उन्होंने अहिंसक आंदोलन के माध्यम से भारत में
+  ब्रिटिश औपनिवेशिक शासन को चुनौती दी। उन्होंने भारत में ब्रिटिश शासन के खिलाफ
+  संघर्ष में महत्वपूर्ण भूमिका निभाई और उन्हें
+
+─── CONSTRAINED (SCG) response ──────────────────────────────────────────
+  महात्मा गांधी के साथ एक सहायक के लिए, यह याद रखना महत्वपूर्ण है कि वह एक ऐसे
+  व्यक्ति थे जिन्होंने भारत के लिए स्वतंत्रता के लिए अथक प्रयास किया था। गांधी
+  ने 1920 के बाद से भारत में ब्रिटिश औपनिवेशिक शासन के लिए आंदोलन का नेतृत्व
+  किया था, और उन्होंने भारत के लिए स्वतंत्रता के लिए लड़ने के लिए ब्रिटिश
+  औपनिवेशिक शासन के साथ संघर्ष किया था। गांधी ने भारत के लिए स्वतंत्रता के लिए
+  आंदोलन का नेतृत्व किया था, और उन्होंने ब्रिटिश औपनिवेशिक शासन के लिए आंदोलन
+  का नेतृत्व किया
+
+─── Decode Trace ────────────────────────────────────────────────────────
+
+  Legend:  · PASS  ✓ OPP_SAVE (already valid)  ✦ MASK_APPLIED  ⊘ ENTROPY_SKIP
+
+ Step    Committed Token         FSM State               Note
+ ────    ──────────────────────  ──────────────────────  ────
+    2 ·  महा                     FREE                    buf='महा'
+    3 ·  त्                      FREE                    buf='महात्'
+    4 ·  मा                      FREE                    buf='महात्मा'
+    5 ·  गांधी                   FREE                    buf='गांधी'
+    6 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'जीवन' (p=0.8992)  →  FORCED: 'साथ' (p=0.0042)
+    7 ·  साथ                     FREE                    buf=''
+    8 ·  एक                      FREE                    buf='एक'
+    9 ·  स                       FREE                    buf='स'
+   10 ·  हा                      FREE                    buf='सहा'
+   11 ·  यक                      FREE                    buf='सहायक'
+   12 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'रूप' (p=0.9985)  →  FORCED: 'लिए' (p=0.0007)
+   13 ·  लिए                     FREE                    buf=''
+   14 ·  ,                       FREE                    buf=','
+   15 ·  यह                      FREE                    buf='यह'
+   16 ·  याद                     FREE                    buf='याद'
+   17 ·  रखना                    FREE                    buf='रखना'
+   18 ·  महत्वपूर्ण              FREE                    buf='महत्वपूर्ण'
+   19 ·  है                      FREE                    buf='है'
+   20 ·  कि                      FREE                    buf='कि'
+   21 ·  वह                      FREE                    buf='वह'
+   22 ·  एक                      FREE                    buf='एक'
+   23 ·                          FREE                    buf=''
+   24 ·  �                       FREE                    buf='�'
+   25 ·  �                       FREE                    buf='��'
+   26 ·  �                       FREE                    buf='ऐ'
+   27 ·  से                      FREE                    buf='ऐसे'
+   28 ·  व्यक्ति                 FREE                    buf='व्यक्ति'
+   29 ·  थे                      FREE                    buf='थे'
+   30 ·  जिन्होंने               FREE                    buf='जिन्होंने'
+   31 ·  भारत                    FREE                    buf='भारत'
+   32 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'स्वतंत्रता' (p=0.8294)  →  FORCED: 'लिए' (p=0.0364)
+   33 ·  लिए                     FREE                    buf=''
+   34 ·  स्वतंत्रता              FREE                    buf='स्वतंत्रता'
+   35 ✓  के                      FREE                    eff=MUST_CASE  greedy='लिए'(0.546) already valid ✓
+   36 ·  लिए                     FREE                    buf=''
+   37 ·  अथक                     FREE                    buf='अथक'
+   38 ·  प्रयास                  FREE                    buf='प्रयास'
+   39 ✦  किया                    FREE                    eff=MUST_AUX
+                               BLOCKED: 'और' (p=0.4876)  →  FORCED: 'था' (p=0.0514)
+   40 ·  था                      FREE                    buf=''
+   41 ·  ।                       FREE                    buf='।'
+   42 ·  गांधी                   FREE                    buf='गांधी'
+   43 ·  ने                      FREE                    buf='ने'
+   44 ·                          FREE                    buf=''
+   45 ·  1                       FREE                    buf='1'
+   46 ·  9                       FREE                    buf='19'
+   47 ·  2                       FREE                    buf='192'
+   48 ·  0                       FREE                    buf='1920'
+   49 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'दशक' (p=0.9971)  →  FORCED: 'बाद' (p=0.0001)
+   50 ·  बाद                     FREE                    buf=''
+   51 ·  से                      FREE                    buf='से'
+   52 ·  भारत                    FREE                    buf='भारत'
+   53 ·  में                     FREE                    buf='में'
+   54 ·  ब्रिटिश                 FREE                    buf='ब्रिटिश'
+   55 ·  औ                       FREE                    buf='औ'
+   56 ·  पन                      FREE                    buf='औपन'
+   57 ·  िव                      FREE                    buf='औपनिव'
+   58 ·  ेश                      FREE                    buf='औपनिवेश'
+   59 ·  िक                      FREE                    buf='औपनिवेशिक'
+   60 ·  शासन                    FREE                    buf='शासन'
+   61 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'खिलाफ' (p=0.9536)  →  FORCED: 'लिए' (p=0.0047)
+   62 ·  लिए                     FREE                    buf=''
+   63 ·  आंदोलन                  FREE                    buf='आंदोलन'
+   64 ·  का                      FREE                    buf='का'
+   65 ·  नेतृत्व                 FREE                    buf='नेतृत्व'
+   66 ✦  किया                    FREE                    eff=MUST_AUX
+                               BLOCKED: ',' (p=0.4550)  →  FORCED: 'था' (p=0.0791)
+   67 ·  था                      FREE                    buf=''
+   68 ·  ,                       FREE                    buf=','
+   69 ·  और                      FREE                    buf='और'
+   70 ·  उन्होंने                FREE                    buf='उन्होंने'
+   71 ·  भारत                    FREE                    buf='भारत'
+   72 ✓  के                      FREE                    eff=MUST_CASE  greedy='लिए'(0.276) already valid ✓
+   73 ·  लिए                     FREE                    buf=''
+   74 ·  स्वतंत्रता              FREE                    buf='स्वतंत्रता'
+   75 ✓  के                      FREE                    eff=MUST_CASE  greedy='लिए'(0.820) already valid ✓
+   76 ·  लिए                     FREE                    buf=''
+   77 ·  लड़ने                   FREE                    buf='लड़ने'
+   78 ✓  के                      FREE                    eff=MUST_CASE  greedy='लिए'(0.905) already valid ✓
+   79 ·  लिए                     FREE                    buf=''
+   80 ·  ब्रिटिश                 FREE                    buf='ब्रिटिश'
+   81 ·  औ                       FREE                    buf='औ'
+   82 ·  पन                      FREE                    buf='औपन'
+   83 ·  िव                      FREE                    buf='औपनिव'
+   84 ·  ेश                      FREE                    buf='औपनिवेश'
+   85 ·  िक                      FREE                    buf='औपनिवेशिक'
+   86 ·  शासन                    FREE                    buf='शासन'
+   87 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'खिलाफ' (p=0.8637)  →  FORCED: 'साथ' (p=0.0179)
+   88 ·  साथ                     FREE                    buf=''
+   89 ·  संघर्ष                  FREE                    buf='संघर्ष'
+   90 ✦  किया                    FREE                    eff=MUST_AUX
+                               BLOCKED: '।' (p=0.7106)  →  FORCED: 'था' (p=0.2614)
+   91 ·  था                      FREE                    buf=''
+   92 ·  ।                       FREE                    buf='।'
+   93 ·  गांधी                   FREE                    buf='गांधी'
+   94 ·  ने                      FREE                    buf='ने'
+   95 ·  भारत                    FREE                    buf='भारत'
+   96 ✓  के                      FREE                    eff=MUST_CASE  greedy='लिए'(0.453) already valid ✓
+   97 ·  लिए                     FREE                    buf=''
+   98 ·  स्वतंत्रता              FREE                    buf='स्वतंत्रता'
+   99 ✓  के                      FREE                    eff=MUST_CASE  greedy='लिए'(0.893) already valid ✓
+  100 ·  लिए                     FREE                    buf=''
+  101 ·  आंदोलन                  FREE                    buf='आंदोलन'
+  ... (truncated at 100 steps)[transformers] Both `max_new_tokens` (=120) and `max_length`(=4096) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=120) and `max_length`(=4096) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+
+
+─── Step Summary ────────────────────────────────────────────────────────
+  Total decode steps    : 120
+  Constrained steps     : 17  (14.2% of all steps)
+  Opportunistic saves   : 6  (model already correct in 35.3% of constrained steps)
+  Mask applied          : 11  (intervention rate = 9.2%)
+  LWG compliance        : 100.00%
+  Obligations seen      : 17  (completions=17, violations=0)
+
+─── Word-level Divergences (baseline vs SCG) ────────────────────────────
+  Word   4: 'जीवन'  →  'साथ'
+  Word   5: 'और'  →  'एक'
+  Word   6: 'स्वतंत्रता'  →  'सहायक'
+  Word   7: 'संग्राम'  →  'के'
+  Word   8: 'में'  →  'लिए,'
+  Word   9: 'उनके'  →  'यह'
+  Word  10: 'योगदान'  →  'याद'
+  Word  11: 'के'  →  'रखना'
+  Word  12: 'बारे'  →  'महत्वपूर्ण'
+  Word  13: 'में'  →  'है'
+══════════════════════════════════════════════════════════════════════════════
+
+══════════════════════════════════════════════════════════════════════════════
+Example 2 — Compound Postposition (MUST_CASE rule)
+──────────────────────────────────────────────────────────────────────────────
+Why this prompt: 'के' triggers MUST_CASE; next word must be a valid compound-postposition continuation.
+
+PROMPT : पर्यावरण प्रदूषण के प्रमुख कारण और उसके समाधान के उपाय बताइए।
+MODE   : constrained
+MODEL  : ai4bharat/Airavata
+
+─── Baseline (unconstrained) response ───────────────────────────────────
+  पर्यावरण प्रदूषण के प्रमुख कारण और उसके समाधान के कुछ उपाय यहां दिए गए हैंः
+  । 1. औद्योगिक गतिविधियाँः विनिर्माण, खनन और निर्माण जैसी औद्योगिक गतिविधियाँ
+  पर्यावरण प्रदूषण का एक प्रमुख स्रोत हैं। ये गतिविधियाँ वायु, जल और मिट्टी
+  में प्रदूषकों को छोड़ती हैं, जो मानव स्वास्थ्य और पर्यावरण के लिए हानिकारक
+  हो सकती हैं। 2. परिवहनः वाहनों, जहाजों और हवाई जहाजों के कारण होने वाले
+  उत्सर्जन से वायु प्रदूषण होता है। सड़क पर वाहनों के
+
+─── CONSTRAINED (SCG) response ──────────────────────────────────────────
+  पर्यावरण प्रदूषण के कारण और उसके समाधान के लिए कुछ प्रमुख कारण और उपाय यहां
+  दिए गए हैंः । 1. वायु प्रदूषणः वायु प्रदूषण एक प्रमुख पर्यावरणीय समस्या है
+  जो दुनिया भर में लाखों लोगों को प्रभावित करती है। वायु प्रदूषण के कारण होने
+  वाले प्रमुख कारणों में औद्योगिक गतिविधियाँ, वाहन उत्सर्जन और जीवाश्म ईंधन का
+  दहन शामिल हैं। वायु प्रदूषण के लिए कुछ समाधानों में स्वच्छ ऊर्जा स्रोतों का
+  उपयोग करना, वाहनों के लिए उत्सर्जन मानकों को बढ़ाना और वायु प्रदूषण को कम
+  करने के लिए सार्वजनिक परिवहन और साइकिल
+
+─── Decode Trace ────────────────────────────────────────────────────────
+
+  Legend:  · PASS  ✓ OPP_SAVE (already valid)  ✦ MASK_APPLIED  ⊘ ENTROPY_SKIP
+
+ Step    Committed Token         FSM State               Note
+ ────    ──────────────────────  ──────────────────────  ────
+    2 ·  पर                      FREE                    buf='पर'
+    3 ·  ्या                     FREE                    buf='पर्या'
+    4 ·  वर                      FREE                    buf='पर्यावर'
+    5 ·  ण                       FREE                    buf='पर्यावरण'
+    6 ·  प्रदूषण                 FREE                    buf='प्रदूषण'
+    7 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'प्रमुख' (p=0.5737)  →  FORCED: 'कारण' (p=0.0105)
+    8 ·  कारण                    FREE                    buf=''
+    9 ·  और                      FREE                    buf='और'
+   10 ·  उसके                    FREE                    buf='उसके'
+   11 ·  समाधान                  FREE                    buf='समाधान'
+   12 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'कुछ' (p=0.3391)  →  FORCED: 'लिए' (p=0.1815)
+   13 ·  लिए                     FREE                    buf=''
+   14 ·  कुछ                     FREE                    buf='कुछ'
+   15 ·  प्रमुख                  FREE                    buf='प्रमुख'
+   16 ·  कारण                    FREE                    buf='कारण'
+   17 ·  और                      FREE                    buf='और'
+   18 ·  उपाय                    FREE                    buf='उपाय'
+   19 ·  यहां                    FREE                    buf='यहां'
+   20 ·  दिए                     FREE                    buf='दिए'
+   21 ·  गए                      FREE                    buf='गए'
+   22 ·  हैं                     FREE                    buf='हैं'
+   23 ·  �                       FREE                    buf='हैं�'
+   24 ·  �                       FREE                    buf='हैं��'
+   25 ·  �                       FREE                    buf='हैंः'
+   26 ·                          FREE                    buf=''
+   27 ·  ।                       FREE                    buf='।'
+   28 ·  \n                      FREE                    buf='।'
+   29 ·  1                       FREE                    buf='।
+1'
+   30 ·  .                       FREE                    buf='।
+1.'
+   31 ·  वायु                    FREE                    buf='वायु'
+   32 ·  प्रदूषण                 FREE                    buf='प्रदूषण'
+   33 ·  �                       FREE                    buf='प्रदूषण�'
+   34 ·  �                       FREE                    buf='प्रदूषण��'
+   35 ·  �                       FREE                    buf='प्रदूषणः'
+   36 ·  वायु                    FREE                    buf='वायु'
+   37 ·  प्रदूषण                 FREE                    buf='प्रदूषण'
+   38 ·  एक                      FREE                    buf='एक'
+   39 ·  प्रमुख                  FREE                    buf='प्रमुख'
+   40 ·  पर्यावरण                FREE                    buf='पर्यावरण'
+   41 ·  ीय                      FREE                    buf='पर्यावरणीय'
+   42 ·  समस्या                  FREE                    buf='समस्या'
+   43 ·  है                      FREE                    buf='है'
+   44 ·  जो                      FREE                    buf='जो'
+   45 ·  दुनिया                  FREE                    buf='दुनिया'
+   46 ·  भर                      FREE                    buf='भर'
+   47 ·  में                     FREE                    buf='में'
+   48 ·  लाखों                   FREE                    buf='लाखों'
+   49 ·  लोगों                   FREE                    buf='लोगों'
+   50 ·  को                      FREE                    buf='को'
+   51 ·  प्रभावित                FREE                    buf='प्रभावित'
+   52 ✓  करती                    FREE                    eff=MUST_AUX  greedy='है'(1.000) already valid ✓
+   53 ·  है                      FREE                    buf=''
+   54 ·  ।                       FREE                    buf='।'
+   55 ·  वायु                    FREE                    buf='वायु'
+   56 ·  प्रदूषण                 FREE                    buf='प्रदूषण'
+   57 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'प्रमुख' (p=0.4622)  →  FORCED: 'कारण' (p=0.0168)
+   58 ·  कारण                    FREE                    buf=''
+   59 ·  होने                    FREE                    buf='होने'
+   60 ·  वाले                    FREE                    buf='वाले'
+   61 ·  प्रमुख                  FREE                    buf='प्रमुख'
+   62 ·  कारणों                  FREE                    buf='कारणों'
+   63 ·  में                     FREE                    buf='में'
+   64 ·  औद्योगिक                FREE                    buf='औद्योगिक'
+   65 ·  गतिविधि                 FREE                    buf='गतिविधि'
+   66 ·  या                      FREE                    buf='गतिविधिया'
+   67 ·  �                       FREE                    buf='गतिविधिया�'
+   68 ·  �                       FREE                    buf='गतिविधिया��'
+   69 ·  �                       FREE                    buf='गतिविधियाँ'
+   70 ·  ,                       FREE                    buf='गतिविधियाँ,'
+   71 ·  वाहन                    FREE                    buf='वाहन'
+   72 ·  उत्सर्जन                FREE                    buf='उत्सर्जन'
+   73 ·  और                      FREE                    buf='और'
+   74 ·  जीव                     FREE                    buf='जीव'
+   75 ·  ा                       FREE                    buf='जीवा'
+   76 ·  श्                      FREE                    buf='जीवाश्'
+   77 ·  म                       FREE                    buf='जीवाश्म'
+   78 ·  ईंधन                    FREE                    buf='ईंधन'
+   79 ·  का                      FREE                    buf='का'
+   80 ·  दहन                     FREE                    buf='दहन'
+   81 ·  शामिल                   FREE                    buf='शामिल'
+   82 ·  हैं                     FREE                    buf='हैं'
+   83 ·  ।                       FREE                    buf='हैं।'
+   84 ·  वायु                    FREE                    buf='वायु'
+   85 ·  प्रदूषण                 FREE                    buf='प्रदूषण'
+   86 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'समाधान' (p=0.5857)  →  FORCED: 'लिए' (p=0.0399)
+   87 ·  लिए                     FREE                    buf=''
+   88 ·  कुछ                     FREE                    buf='कुछ'
+   89 ·  समाधान                  FREE                    buf='समाधान'
+   90 ·  ों                      FREE                    buf='समाधानों'
+   91 ·  में                     FREE                    buf='में'
+   92 ·  स्वच्छ                  FREE                    buf='स्वच्छ'
+   93 ·                          FREE                    buf=''
+   94 ·  �                       FREE                    buf='�'
+   95 ·  �                       FREE                    buf='��'
+   96 ·  �                       FREE                    buf='ऊ'
+   97 ·  र्जा                    FREE                    buf='ऊर्जा'
+   98 ·  स्रोतों                 FREE                    buf='स्रोतों'
+   99 ·  का                      FREE                    buf='का'
+  100 ·  उपयोग                   FREE                    buf='उपयोग'
+  101 ·  करना                    FREE                    buf='करना'
+  ... (truncated at 100 steps)[transformers] Both `max_new_tokens` (=120) and `max_length`(=4096) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=120) and `max_length`(=4096) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+
+
+─── Step Summary ────────────────────────────────────────────────────────
+  Total decode steps    : 120
+  Constrained steps     : 7  (5.8% of all steps)
+  Opportunistic saves   : 2  (model already correct in 28.6% of constrained steps)
+  Mask applied          : 5  (intervention rate = 4.2%)
+  LWG compliance        : 100.00%
+  Obligations seen      : 7  (completions=7, violations=0)
+
+─── Word-level Divergences (baseline vs SCG) ────────────────────────────
+  Word   4: 'प्रमुख'  →  'कारण'
+  Word   5: 'कारण'  →  'और'
+  Word   6: 'और'  →  'उसके'
+  Word   7: 'उसके'  →  'समाधान'
+  Word   8: 'समाधान'  →  'के'
+  Word   9: 'के'  →  'लिए'
+  Word  11: 'उपाय'  →  'प्रमुख'
+  Word  12: 'यहां'  →  'कारण'
+  Word  13: 'दिए'  →  'और'
+  Word  14: 'गए'  →  'उपाय'
+══════════════════════════════════════════════════════════════════════════════
+
+══════════════════════════════════════════════════════════════════════════════
+Example 3 — Open Creative (multiple rules)
+──────────────────────────────────────────────────────────────────────────────
+Why this prompt: Creative writing triggers verb-aux chains, के-postpositions, and fixed phrases together.
+
+PROMPT : एक प्रेरणादायक कहानी लिखिए जिसमें एक ग्रामीण लड़की शिक्षा प्राप्त करती है।
+MODE   : constrained
+MODEL  : ai4bharat/Airavata
+
+─── Baseline (unconstrained) response ───────────────────────────────────
+  निश्चित रूप से, यहाँ एक प्रेरक कहानी है जिसमें एक ग्रामीण लड़की शिक्षा
+  प्राप्त करती हैः एक समय की बात है, एक छोटे से गाँव में, एक युवा लड़की,
+  शिक्षा, रहती थी। वह एक मेहनती और समर्पित लड़की थी, जो अपने परिवार की देखभाल
+  करने और अपने गांव में बदलाव लाने के लिए दृढ़ थी। शिक्षा हमेशा अपने गाँव में
+  बदलाव लाने के लिए नए विचारों और पहलों के साथ आती थी। वह एक प्रतिभाशाली
+  लेखिका थीं, और उन्होंने अपने गा��
+
+─── CONSTRAINED (SCG) response ──────────────────────────────────────────
+  निश्चित रूप से, यहा है एक कहानी हैः । एक समय की बात है, एक छोटे से गाँव में,
+  एक युवा थी, शिक्षा नाम की एक ग्रामीण लड़की। वह एक दयालु और मेहनती लड़की थी,
+  जो अपने गाँव के लिए कड़ी मेहनत थी। शिक्षा को पढ़ना और लिखना पसंद था, और वह
+  हमेशा था। । एक दिन, एक प्रसिद्ध विद्वान, श्री गया, गाँव आए। उन्होंने गाँव के
+  लिए एक पुस्तकालय बनाने की
+
+─── Decode Trace ────────────────────────────────────────────────────────
+
+  Legend:  · PASS  ✓ OPP_SAVE (already valid)  ✦ MASK_APPLIED  ⊘ ENTROPY_SKIP
+
+ Step    Committed Token         FSM State               Note
+ ────    ──────────────────────  ──────────────────────  ────
+    2 ·  नि                      FREE                    buf='नि'
+    3 ·  श्च                     FREE                    buf='निश्च'
+    4 ·  ित                      FREE                    buf='निश्चित'
+    5 ·  रूप                     FREE                    buf='रूप'
+    6 ·  से                      FREE                    buf='से'
+    7 ·  ,                       FREE                    buf='से,'
+    8 ✦  यहा                     FREE                    eff=MUST_AUX
+                               BLOCKED: '�' (p=1.0000)  →  FORCED: 'है' (p=0.0000)
+    9 ·  है                      FREE                    buf=''
+   10 ·  एक                      FREE                    buf='एक'
+   11 ✦  कहानी                   FREE                    eff=MUST_AUX
+                               BLOCKED: '�' (p=0.3228)  →  FORCED: 'है' (p=0.0041)
+   12 ·  है                      FREE                    buf=''
+   13 ·  �                       FREE                    buf='�'
+   14 ·  �                       FREE                    buf='��'
+   15 ·  �                       FREE                    buf='ः'
+   16 ·                          FREE                    buf=''
+   17 ·  ।                       FREE                    buf='।'
+   18 ·  \n                      FREE                    buf='।'
+   19 ·  एक                      FREE                    buf='।
+एक'
+   20 ·  समय                     FREE                    buf='समय'
+   21 ·  की                      FREE                    buf='की'
+   22 ·  बात                     FREE                    buf='बात'
+   23 ·  है                      FREE                    buf='है'
+   24 ·  ,                       FREE                    buf='है,'
+   25 ·  एक                      FREE                    buf='एक'
+   26 ·  छोटे                    FREE                    buf='छोटे'
+   27 ·  से                      FREE                    buf='से'
+   28 ·  गा                      FREE                    buf='गा'
+   29 ·  �                       FREE                    buf='गा�'
+   30 ·  �                       FREE                    buf='गा��'
+   31 ·  �                       FREE                    buf='गाँ'
+   32 ·  व                       FREE                    buf='गाँव'
+   33 ·  में                     FREE                    buf='में'
+   34 ·  ,                       FREE                    buf='में,'
+   35 ·  एक                      FREE                    buf='एक'
+   36 ✦  युवा                    FREE                    eff=MUST_AUX
+                               BLOCKED: 'लड़की' (p=0.7292)  →  FORCED: 'थी' (p=0.0001)
+   37 ·  थी                      FREE                    buf=''
+   38 ·  ,                       FREE                    buf=','
+   39 ·  श                       FREE                    buf='श'
+   40 ·  िक                      FREE                    buf='शिक'
+   41 ·  ्                       FREE                    buf='शिक्'
+   42 ·  षा                      FREE                    buf='शिक्षा'
+   43 ·  नाम                     FREE                    buf='नाम'
+   44 ·  की                      FREE                    buf='की'
+   45 ·  एक                      FREE                    buf='एक'
+   46 ·  ग्राम                   FREE                    buf='ग्राम'
+   47 ·  ी                       FREE                    buf='ग्रामी'
+   48 ·  ण                       FREE                    buf='ग्रामीण'
+   49 ·  लड़की                   FREE                    buf='लड़की'
+   50 ·  ।                       FREE                    buf='लड़की।'
+   51 ·  वह                      FREE                    buf='वह'
+   52 ·  एक                      FREE                    buf='एक'
+   53 ·  दयाल                    FREE                    buf='दयाल'
+   54 ·  ु                       FREE                    buf='दयालु'
+   55 ·  और                      FREE                    buf='और'
+   56 ·  मेहनत                   FREE                    buf='मेहनत'
+   57 ·  ी                       FREE                    buf='मेहनती'
+   58 ✓  लड़की                   FREE→MUST_AUX           eff=MUST_AUX  greedy='थी'(0.864) already valid ✓
+   59 ·  थी                      MUST_AUX→FREE           buf='थी'
+   60 ·  ,                       FREE                    buf='थी,'
+   61 ·  जो                      FREE                    buf='जो'
+   62 ·  अपने                    FREE                    buf='अपने'
+   63 ·  गा                      FREE                    buf='गा'
+   64 ·  �                       FREE                    buf='गा�'
+   65 ·  �                       FREE                    buf='गा��'
+   66 ·  �                       FREE                    buf='गाँ'
+   67 ·  व                       FREE                    buf='गाँव'
+   68 ✦  के                      FREE                    eff=MUST_CASE
+                               BLOCKED: 'लोगों' (p=0.4152)  →  FORCED: 'लिए' (p=0.1527)
+   69 ·  लिए                     FREE                    buf=''
+   70 ·  कड़ी                    FREE                    buf='कड़ी'
+   71 ✦  मेहनत                   FREE→MUST_AUX           eff=MUST_AUX
+                               BLOCKED: 'करती' (p=0.7788)  →  FORCED: 'थी' (p=0.0000)
+   72 ·  थी                      MUST_AUX→FREE           buf='थी'
+   73 ·  ।                       FREE                    buf='थी।'
+   74 ·  श                       FREE                    buf='श'
+   75 ·  िक                      FREE                    buf='शिक'
+   76 ·  ्                       FREE                    buf='शिक्'
+   77 ·  षा                      FREE                    buf='शिक्षा'
+   78 ·  को                      FREE                    buf='को'
+   79 ·  पढ़ना                   FREE                    buf='पढ़ना'
+   80 ·  और                      FREE                    buf='और'
+   81 ·  लिखना                   FREE                    buf='लिखना'
+   82 ·  पसंद                    FREE                    buf='पसंद'
+   83 ·  था                      FREE                    buf='था'
+   84 ·  ,                       FREE                    buf='था,'
+   85 ·  और                      FREE                    buf='और'
+   86 ·  वह                      FREE                    buf='वह'
+   87 ✦  हमेशा                   FREE                    eff=MUST_AUX
+                               BLOCKED: 'अपने' (p=0.3104)  →  FORCED: 'था' (p=0.0000)
+   88 ·  था                      FREE                    buf=''
+   89 ·  ।                       FREE                    buf='।'
+   90 ·                          FREE                    buf=''
+   91 ·  ।                       FREE                    buf='।'
+   92 ·  \n                      FREE                    buf='।'
+   93 ·  एक                      FREE                    buf='।
+एक'
+   94 ·  दिन                     FREE                    buf='दिन'
+   95 ·  ,                       FREE                    buf='दिन,'
+   96 ·  एक                      FREE                    buf='एक'
+   97 ·  प्रसिद्ध                FREE                    buf='प्रसिद्ध'
+   98 ·  विद्वान                 FREE                    buf='विद्वान'
+   99 ·  ,                       FREE                    buf='विद्वान,'
+  100 ✦  श्री                    FREE                    eff=MUST_AUX
+                               BLOCKED: 'मान' (p=0.2048)  →  FORCED: 'गया' (p=0.0006)
+  101 ·  गया                     FREE                    buf=''
+  ... (truncated at 100 steps)
+
+─── Step Summary ────────────────────────────────────────────────────────
+  Total decode steps    : 120
+  Constrained steps     : 9  (7.5% of all steps)
+  Opportunistic saves   : 1  (model already correct in 11.1% of constrained steps)
+  Mask applied          : 8  (intervention rate = 6.7%)
+  LWG compliance        : 77.78%
+  Obligations seen      : 9  (completions=7, violations=2)
+
+─── Word-level Divergences (baseline vs SCG) ────────────────────────────
+  Word   4: 'यहाँ'  →  'यहा'
+  Word   5: 'एक'  →  'है'
+  Word   6: 'प्रेरक'  →  'एक'
+  Word   8: 'है'  →  'हैः'
+  Word   9: 'जिसमें'  →  '।'
+  Word  11: 'ग्रामीण'  →  'समय'
+  Word  12: 'लड़की'  →  'की'
+  Word  13: 'शिक्षा'  →  'बात'
+  Word  14: 'प्राप्त'  →  'है,'
+  Word  15: 'करती'  →  'एक'
+══════════════════════════════════════════════════════════════════════════════
